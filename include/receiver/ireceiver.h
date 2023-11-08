@@ -9,8 +9,7 @@ using namespace Base;
 struct BaseSettings {
 
     uint32_t sampleCount;
-protected:
-    virtual void foo() = 0;
+    virtual ~BaseSettings() = default;
 };
 
 struct RfSettings {
@@ -29,10 +28,7 @@ struct ReceiverSettings: public BaseSettings {
     int direct_sampling { 0 };
     int dithering { 1 };
 
-
-protected:
-    virtual void foo() {
-    }
+    ~ReceiverSettings() override = default;
 
 };
 
@@ -47,9 +43,7 @@ struct fakeParams: public BaseSettings {
     float noiseLVL;
     std::vector< sinParams > sinPar;
 
-protected:
-    virtual void foo() {
-    }
+    ~fakeParams() override = default;
 };
 
 
@@ -65,8 +59,8 @@ public:
     virtual bool getComplex( const BaseSettings* sett, Buffer& ) = 0;
     virtual void getSpectrum( const BaseSettings* sett, SpectBuff& ) = 0;
 
-    //setCallBack ();
-    //start();
+    // setCallBack ();
+    // start();
     virtual bool getComplex(  Buffer& ) = 0;
     virtual void getSpectrum(  SpectBuff& ) = 0;
 };
