@@ -1,5 +1,5 @@
 #include <iostream>
-#include "receiver/receiverwrapper.h"
+#include "receiver/receiverfactory.h"
 
 #include <vector>
 
@@ -14,7 +14,7 @@ using namespace std;
 
 int main() {
 //real receiver:
- auto reImpl = ReceiverWrapper::getReceiverByName( "hw" );
+ auto reImpl = ReceiverFactory::getReceiverByName( "hw" );
  uint32_t centralFreq = 88900000;
  uint32_t sampleFreq = 960000;
  RfSettings sett { centralFreq, sampleFreq, 490 };

@@ -3,11 +3,11 @@
 #include <vector>
 #include <fstream>
 #include "receiver/receiversoftimpl.h"
-#include "receiver/receiverwrapper.h"
+#include "receiver/receiverfactory.h"
 
 TEST( fakeReceiverTest, creating ) {
 
-    auto testfakeImpl = ReceiverWrapper::getReceiverByName( "fake" );
+    auto testfakeImpl = ReceiverFactory::getReceiverByName( "fake" );
     ASSERT_NE(testfakeImpl, nullptr);
 
 }
@@ -27,7 +27,7 @@ TEST( fakeReceiverTest, getComplexTest ) {
     }
     file.close();
 
-    auto testfakeImpl = ReceiverWrapper::getReceiverByName( "fake" );
+    auto testfakeImpl = ReceiverFactory::getReceiverByName( "fake" );
     sinParams sin1 { 6, 10 };
 
     fakeParams fakeset;
@@ -67,7 +67,7 @@ TEST( fakeReceiverTest, getSpectrumTest ) {
 
     file.close();
 
-    auto testfakeImpl = ReceiverWrapper::getReceiverByName( "fake" );
+    auto testfakeImpl = ReceiverFactory::getReceiverByName( "fake" );
     sinParams sin1 { 6, 10 };
 
     fakeParams fakeset;

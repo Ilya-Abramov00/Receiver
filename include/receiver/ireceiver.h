@@ -65,6 +65,8 @@ public:
     virtual bool getComplex( const BaseSettings* sett, Buffer& ) = 0;
     virtual void getSpectrum( const BaseSettings* sett, SpectBuff& ) = 0;
 
+    //setCallBack ();
+    //start();
     virtual bool getComplex(  Buffer& ) = 0;
     virtual void getSpectrum(  SpectBuff& ) = 0;
 };
