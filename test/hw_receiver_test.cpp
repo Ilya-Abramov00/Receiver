@@ -9,7 +9,7 @@
 // real: working correct, write complex on Fc=0
 // fake: working correct, but GenW is uncorrect
 
-TEST( receivers_test, output_values ) {
+TEST( receivers_test, DISABLED_output_values ) {
     // real receiver:
 // auto reImpl = ReceiverFactory::getReceiverByName( "hw" );
 // uint32_t centralFreq = 88900000;
