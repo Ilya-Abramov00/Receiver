@@ -3,7 +3,7 @@
 #include "ireceiver.h"
 #include <memory>
 
-class ReceiverWrapper
+class ReceiverFactory
 {
 public:
     static std::unique_ptr<IReceiver> getReceiverByName(std::string name);
