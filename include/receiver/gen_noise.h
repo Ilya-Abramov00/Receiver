@@ -17,8 +17,9 @@ public:
         std::vector< Complex< Type > > data( size );
 
         for( uint32_t i = 0; i < size; i++ ) {
-            data[ i ].re =   A * ( 2 * ( ( rand() / ( static_cast< double >( RAND_MAX ) ) ) - 0.5 ) );// [-A;A]
-            data[ i ].im =   A * ( 2 * ( ( rand() / ( static_cast< double >( RAND_MAX ) ) ) - 0.5 ) );// [-A;A]
+
+            data [ i ] = { static_cast< Type >( A * ( 2 * ( ( rand() / ( static_cast< double >( RAND_MAX ) ) )  - 0.5 ) ) ),
+                       static_cast< Type >( A * ( 2 * ( ( rand() / ( static_cast< double >( RAND_MAX ) ) ) - 0.5 ) ) ) };
         }
         return data;
     }

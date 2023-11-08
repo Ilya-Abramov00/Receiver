@@ -25,8 +25,8 @@ public:
         std::vector< Complex< Type > > data( s_len );
         for( uint32_t i = 0; i < s_len; i++ ) {
 
-            data [ i ].re =  amp * cos( 2 * M_PI * freq * i / fd );
-            data [ i ].im =  amp * sin( 2 * M_PI * freq * i / fd );
+            data [ i ] = { static_cast< Type >( amp * cos( 2 * M_PI * freq * i / fd ) ),
+                       static_cast< Type >( amp * sin( 2 * M_PI * freq * i / fd ) ) };
 
         }
         return data;
