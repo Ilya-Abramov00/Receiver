@@ -24,6 +24,3 @@ target_link_libraries(${PROJECT_NAME} INTERFACE base)
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 include("unittest.cmake")
-
-add_executable(radio_receiver main.cpp)
-target_link_libraries(radio_receiver receiver)
