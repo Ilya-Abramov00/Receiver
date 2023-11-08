@@ -4,7 +4,7 @@
 #include "gen_noise.h"
 #include "gen_sin.h"
 #include <memory>
-#include "DSP/fft.h"
+#include "dsp/fft.h"
 
 
 class FakeReceiver: public IReceiver {
@@ -13,7 +13,7 @@ public:
     FakeReceiver();
     ~FakeReceiver();
 
-    virtual void setSettings(  BaseSettings* settings )  override final;// useless?
+    virtual void setSettings(  BaseSettings* settings )  override final;
     virtual bool getComplex( const BaseSettings* settings, Buffer& out ) override final;
     virtual void getSpectrum( const BaseSettings* settings, SpectBuff& out )override final;
 
@@ -23,8 +23,6 @@ public:
 
 
 private:
-
-    // fakeParams fakeSettings;
 
     void set( const fakeParams* fakeset )const;
     template < typename Type >

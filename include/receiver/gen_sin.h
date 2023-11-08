@@ -2,7 +2,7 @@
 #define GEN_SIN_H
 
 #include <vector>
-#include "Base/complex.h"
+#include "base/complex.h"
 #include <cmath>
 
 using namespace Base;

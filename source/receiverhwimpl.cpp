@@ -1,4 +1,4 @@
-#include "receiverhwimpl.h"
+#include "receiver/receiverhwimpl.h"
 #include <iostream>
 #include <errno.h>
 #include <signal.h>
@@ -6,8 +6,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "rtl-sdr.h"
-#include "DSP/fft.h"
-#include "Base/complex.h"
+#include "dsp/fft.h"
+#include "base/complex.h"
 
 using namespace Base;
 
