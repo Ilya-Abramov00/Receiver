@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
-#include "../include/DSP/fft.h"
+#include "dsp/fft.h"
 #include <vector>
 #include <fstream>
-#include "../include/receiver/receiversoftimpl.h"
-#include "../include/receiver/receiverwrapper.h"
+#include "receiver/receiversoftimpl.h"
+#include "receiver/receiverwrapper.h"
 
 TEST( fakeReceiverTest, creating ) {
 

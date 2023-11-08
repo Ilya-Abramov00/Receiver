@@ -21,7 +21,7 @@ add_library(${PROJECT_NAME} SHARED ${SRC})
 target_link_libraries(${PROJECT_NAME} PUBLIC fftw3 rtlsdr dsp)
 target_link_libraries(${PROJECT_NAME} INTERFACE base)
 
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include/receiver)
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 include("unittest.cmake")
 

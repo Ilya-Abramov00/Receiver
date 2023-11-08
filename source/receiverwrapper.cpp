@@ -1,6 +1,6 @@
-#include "receiverwrapper.h"
-#include "receiverhwimpl.h"
-#include "receiversoftimpl.h"
+#include "receiver/receiverwrapper.h"
+#include "receiver/receiverhwimpl.h"
+#include "receiver/receiversoftimpl.h"
 
 std::unique_ptr< IReceiver > ReceiverWrapper::getReceiverByName( std::string name ) {
     if( name == "hw" )

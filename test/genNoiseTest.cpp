@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
-#include "../../DSP/include/DSP/fft.h"
-#include "../include/receiver/gen_noise.h"
-#include "../../Base/include/Base/writer.h"
+#include "dsp/fft.h"
+#include "receiver/gen_noise.h"
+#include "base/writer.h"
 #include <vector>
 #include <fstream>
 

@@ -4,7 +4,7 @@
 #include "gen_noise.h"
 #include "gen_sin.h"
 #include <memory>
-#include "DSP/fft.h"
+#include "dsp/fft.h"
 
 
 class FakeReceiver: public IReceiver {
