@@ -59,6 +59,9 @@ public:
     virtual void getSpectrum( const BaseSettings* sett, SpectBuff& ) = 0;
 
     virtual void start() = 0;
+    void stop() {
+        needProcessing = false;
+    }
 
     virtual bool getComplex(  Buffer& ) = 0;
     virtual void getSpectrum(  SpectBuff& ) = 0;
@@ -66,6 +69,11 @@ public:
 
 protected:
     virtual bool getComplex( Complex< uint8_t >* complexBuff, uint32_t sizeOfBuff ) = 0;
+    bool isNeedProcessing() {
+        return needProcessing;
+    }
+
+    bool needProcessing{ };
     std::function< void( Complex< uint8_t >*, uint32_t ) > process;
     Buffer complexBuff;
 };

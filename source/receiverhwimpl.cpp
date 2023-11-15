@@ -476,9 +476,10 @@ bool ReceiverHWImpl::getComplex( Complex< uint8_t >* complexBuff, uint32_t sizeO
 
 void ReceiverHWImpl::start() {
 
+    needProcessing = true;
     uint32_t counter = complexBuff.size();
     uint32_t readSize = 256;
-    while( true ) {
+    while( isNeedProcessing() ) {
 
         getComplex( complexBuff.data(), readSize );
 
