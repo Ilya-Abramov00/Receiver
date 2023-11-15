@@ -2,13 +2,28 @@
 #include <vector>
 #include <iostream>
 #include "receiver/receiverfactory.h"
+#include "receiver/receiverhwimpl.h"
 
-// AGC mode changed to on
-// fake: complex and spectrum writing in file and have 2nd version (withtout settings)
-// real: complex and spectrum writing in file and have 2nd version (withtout settings)
-// real: working correct, write complex on Fc=0
-// fake: working correct, but GenW is uncorrect
+TEST( receivers_test, DISABLED_startTest ) {
 
+    auto rec = ReceiverFactory::getReceiverByName( "hw" );
+    uint32_t centralFreq = 88900000;
+    uint32_t sampleFreq = 960000;
+    RfSettings sett { centralFreq, sampleFreq, 490 };
+
+    ReceiverSettings recset;
+    recset.sampleCount = ( uint32_t )4194304; // must be 512 or higher 4194304
+    recset.rfSettings = sett;
+
+    rec->setSettings( &recset );
+
+    rec->setCallBack( [] ( Complex< uint8_t >*, uint32_t ) {
+
+    } );
+
+    rec->start();
+
+}
 TEST( receivers_test, DISABLED_output_values ) {
     // real receiver:
 // auto reImpl = ReceiverFactory::getReceiverByName( "hw" );
