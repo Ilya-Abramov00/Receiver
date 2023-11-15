@@ -16,13 +16,17 @@ public:
     virtual void getSpectrum( const BaseSettings* settings, SpectBuff& out )override final;
     virtual void setSettings(  BaseSettings* sett )  override final;
 
+    virtual void start() override final;
+
     virtual bool getComplex(  Buffer& out  ) override final;
     virtual void getSpectrum(  SpectBuff& out ) override final;
 
+    void setCallBack( std::function< void( Complex< uint8_t >*, uint32_t ) > f ) override final;
 
 private:
     struct Pimpl;
     std::unique_ptr< Pimpl > m_d;
+    virtual bool getComplex( Complex< uint8_t >* complexBuff, uint32_t sizeOfBuff ) override final;
 
 };
 

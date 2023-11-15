@@ -93,7 +93,40 @@ void FakeReceiver::getSpectrum(  SpectBuff& out ) {
 
 }
 
+bool FakeReceiver::getComplex( Complex< uint8_t >* complexBuff, uint32_t sizeOfBuff ) {
 
+    Complex a( 0, 1 );
+
+    for( uint32_t i = 0; i != sizeOfBuff; i++ ) {
+
+        complexBuff[ i ] = a;
+    }
+
+    return true;
+}
+
+void FakeReceiver::start() {
+
+    uint32_t counter = complexBuff.size();
+    uint32_t readSize = 256;
+    while( true ) {
+
+        getComplex( complexBuff.data(), readSize );
+
+        counter -= readSize;
+
+        if( counter == 0 ) {
+            process( complexBuff.data(), complexBuff.size() );
+            complexBuff.clear();
+            counter = complexBuff.size();
+        }
+    }
+
+}
+
+void FakeReceiver::setCallBack( std::function< void( Complex< uint8_t >*, uint32_t ) > f ) {
+    process = f;
+}
 
 
 

@@ -3,6 +3,7 @@
 #include "base/complex.h"
 #include <cstdint>
 #include <vector>
+#include <functional>
 
 using namespace Base;
 
@@ -47,8 +48,6 @@ struct fakeParams: public BaseSettings {
 };
 
 
-
-
 class IReceiver {
 public:
     using Buffer = std::vector< Complex< uint8_t > >;
@@ -59,8 +58,16 @@ public:
     virtual bool getComplex( const BaseSettings* sett, Buffer& ) = 0;
     virtual void getSpectrum( const BaseSettings* sett, SpectBuff& ) = 0;
 
+    virtual void start() = 0;
+
     virtual bool getComplex(  Buffer& ) = 0;
     virtual void getSpectrum(  SpectBuff& ) = 0;
+    virtual void setCallBack( std::function< void( Complex< uint8_t >*, uint32_t ) > f ) = 0;
+
+protected:
+    virtual bool getComplex( Complex< uint8_t >* complexBuff, uint32_t sizeOfBuff ) = 0;
+    std::function< void( Complex< uint8_t >*, uint32_t ) > process;
+    Buffer complexBuff;
 };
 
 

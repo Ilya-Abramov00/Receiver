@@ -1,4 +1,5 @@
 #include "receiver/receiverhwimpl.h"
+#include "receiver/receiverfactory.h"
 #include <iostream>
 #include <errno.h>
 #include <signal.h>
@@ -39,6 +40,7 @@ struct ReceiverHWImpl::Pimpl {
 
 ReceiverHWImpl::ReceiverHWImpl() : m_d( std::make_unique< Pimpl >() ) {
     m_d->open();
+    complexBuff.resize( 1024 );
 }
 
 
@@ -460,3 +462,37 @@ uint32_t ReceiverHWImpl::Pimpl::roundPowerTwo( uint32_t& size ) {
     return result;
 }
 
+bool ReceiverHWImpl::getComplex( Complex< uint8_t >* complexBuff, uint32_t sizeOfBuff ) {
+
+    auto bytesToRead = 2 * sizeOfBuff;
+    m_d->resetBuffer();
+    auto result = rtlsdr_read_sync( m_d->dev, complexBuff, bytesToRead, &( m_d->n_read ) );
+
+    if( result < 0 )
+        std::cerr << "WARNING: sync read failed." << std::endl;
+
+    return result;
+}
+
+void ReceiverHWImpl::start() {
+
+    uint32_t counter = complexBuff.size();
+    uint32_t readSize = 256;
+    while( true ) {
+
+        getComplex( complexBuff.data(), readSize );
+
+        counter -= readSize;
+
+        if( counter == 0 ) {
+            process( complexBuff.data(), complexBuff.size() );
+            complexBuff.clear();
+            counter = complexBuff.size();
+        }
+    }
+
+}
+
+void ReceiverHWImpl::setCallBack( std::function< void( Complex< uint8_t >*, uint32_t ) > f ) {
+    process = f;
+}
