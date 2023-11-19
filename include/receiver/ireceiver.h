@@ -52,6 +52,7 @@ class IReceiver {
 public:
     using Buffer = std::vector< Complex< uint8_t > >;
     using SpectBuff = std::vector< Complex< double > >;
+    IReceiver( size_t bufferSize );
     virtual ~IReceiver() = default;
 
     virtual void setSettings(  BaseSettings* sett )  = 0;//
@@ -65,17 +66,22 @@ public:
 
     virtual bool getComplex(  Buffer& ) = 0;
     virtual void getSpectrum(  SpectBuff& ) = 0;
-    virtual void setCallBack( std::function< void( Complex< uint8_t >*, uint32_t ) > f ) = 0;
+    virtual void setCallBack( std::function< void( Complex< int8_t >*, uint32_t ) > f ) = 0;
 
 protected:
-    virtual bool getComplex( Complex< uint8_t >* complexBuff, uint32_t sizeOfBuff ) = 0;
+    virtual bool getComplex( Complex< int8_t >* complexBuff, uint32_t sizeOfBuff ) = 0;
     bool isNeedProcessing() {
         return needProcessing;
     }
 
-    bool needProcessing{ };
-    std::function< void( Complex< uint8_t >*, uint32_t ) > process;
-    Buffer complexBuff;
+    bool needProcessing = true;
+    std::function< void( Complex< int8_t >*, uint32_t ) > process;
+    std::vector< Complex< int8_t > > complexBuff;
+    size_t bufferSize;
 };
 
 
+
+inline IReceiver::IReceiver( size_t bufferSize ) : bufferSize( bufferSize ) {
+    complexBuff.reserve( bufferSize );
+}

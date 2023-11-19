@@ -38,9 +38,8 @@ struct ReceiverHWImpl::Pimpl {
 };
 
 
-ReceiverHWImpl::ReceiverHWImpl() : m_d( std::make_unique< Pimpl >() ) {
+ReceiverHWImpl::ReceiverHWImpl( size_t bufferSize ) : IReceiver( bufferSize ), m_d( std::make_unique< Pimpl >() ) {
     m_d->open();
-    complexBuff.resize( 1024 );
 }
 
 
@@ -462,11 +461,17 @@ uint32_t ReceiverHWImpl::Pimpl::roundPowerTwo( uint32_t& size ) {
     return result;
 }
 
-bool ReceiverHWImpl::getComplex( Complex< uint8_t >* complexBuff, uint32_t sizeOfBuff ) {
+bool ReceiverHWImpl::getComplex( Complex< int8_t >* complexBuff, uint32_t sizeOfBuff ) {
 
     auto bytesToRead = 2 * sizeOfBuff;
     m_d->resetBuffer();
-    auto result = rtlsdr_read_sync( m_d->dev, complexBuff, bytesToRead, &( m_d->n_read ) );
+    std::vector< uint8_t > tmpBuf( bytesToRead );
+
+    auto result = rtlsdr_read_sync( m_d->dev,  tmpBuf.data(), bytesToRead, &( m_d->n_read ) );
+
+    for( uint32_t i = 0; i < sizeOfBuff; ++i ) {
+        complexBuff[ i ] = {  static_cast< int8_t >(  static_cast< int16_t >( tmpBuf[ i * 2 ] ) - 128 ),  static_cast< int8_t >(   static_cast< int16_t >( tmpBuf[ i * 2 + 1 ] ) - 128 ) };
+    }
 
     if( result < 0 )
         std::cerr << "WARNING: sync read failed." << std::endl;
@@ -477,7 +482,7 @@ bool ReceiverHWImpl::getComplex( Complex< uint8_t >* complexBuff, uint32_t sizeO
 void ReceiverHWImpl::start() {
 
     needProcessing = true;
-    uint32_t counter = complexBuff.size();
+    size_t counter = bufferSize;
     uint32_t readSize = 256;
     while( isNeedProcessing() ) {
 
@@ -486,14 +491,13 @@ void ReceiverHWImpl::start() {
         counter -= readSize;
 
         if( counter == 0 ) {
-            process( complexBuff.data(), complexBuff.size() );
-            complexBuff.clear();
-            counter = complexBuff.size();
+            process( complexBuff.data(), bufferSize );
+            counter = bufferSize;
         }
     }
 
 }
 
-void ReceiverHWImpl::setCallBack( std::function< void( Complex< uint8_t >*, uint32_t ) > f ) {
+void ReceiverHWImpl::setCallBack( std::function< void( Complex< int8_t >*, uint32_t ) > f ) {
     process = f;
 }
