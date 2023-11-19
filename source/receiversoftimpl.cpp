@@ -1,6 +1,6 @@
 #include "receiver/receiversoftimpl.h"
 
-FakeReceiver::FakeReceiver() {
+FakeReceiver::FakeReceiver( size_t bufferSize ) : IReceiver( bufferSize ) {
 
 }
 
@@ -20,33 +20,6 @@ void FakeReceiver::setSettings( BaseSettings* settings ) {
 }
 
 
-template < typename Type >
-std::vector< Complex< Type > > FakeReceiver::GenSignal( const fakeParams* fakeset ) {
-    GenNoise WNGen;
-    Generator_sin SnGen;
-    std::vector< Complex< double > > Wdata = WNGen.GenWN< double >( fakeset->noiseLVL, fakeset->sampleCount );
-
-    double a0 =  sqrt( 1.5 ) * pow( 10, fakeset->noiseLVL / 20 );// sqrt( pow( 10, fakeset->noiseLVL / 20 ) )
-    Complex< double > A0;
-    A0.re = a0;
-    A0.im = A0.re;
-    std::vector< Complex< Type > > data( fakeset->sampleCount );
-
-    for( uint32_t i = 0; i < fakeset->sinPar.size(); i++ ) {
-
-        std::vector< Complex< double > > dataSin = SnGen.gen_sin< double >( fakeset->sinPar[ i ].amp,  fakeset->sinPar[ i ].freq, fakeset->fd,  fakeset->sampleCount );
-        Complex< double > a = 0;
-        a.im = fakeset->sinPar[ i ].amp;
-        // a.re = a.im;
-        for( uint64_t j = 0; j < fakeset->sampleCount; j++ ) {
-            Wdata[ j ] += dataSin[ j ] + a;
-        }
-    }
-    for( uint64_t j = 0; j < fakeset->sampleCount; j++ ) {
-        data[ j ] += Wdata[ j ] + A0;
-    }
-    return data;
-}
 
 
 bool FakeReceiver::getComplex( const BaseSettings* settings, Buffer& out ) {
@@ -74,7 +47,7 @@ void FakeReceiver::getSpectrum( const BaseSettings* settings, SpectBuff& out ) {
 
 bool FakeReceiver::getComplex(  Buffer& out ) {
 
-    std::vector< Complex< uint8_t > > data = this->GenSignal< uint8_t >( f_p );
+    std::vector< Complex< int8_t > > data = this->GenSignal< int8_t >( f_p );
     auto sizeBuff = f_p->sampleCount;
     out.resize( sizeBuff );
     for( uint64_t i = 0; i < f_p->sampleCount; i++ ) {
@@ -93,7 +66,40 @@ void FakeReceiver::getSpectrum(  SpectBuff& out ) {
 
 }
 
+bool FakeReceiver::getComplex( Complex< int8_t >* complexBuff, uint32_t sizeOfBuff ) {
 
+    f_p->sampleCount = sizeOfBuff;
+    std::vector< Complex< int8_t > > data = GenSignal< int8_t >( f_p );
+    for( uint32_t i = 0; i != sizeOfBuff; i++ ) {
+        *( complexBuff + i ) = data[ i ];
+    }
+
+    return true;
+
+}
+
+void FakeReceiver::start() {
+
+    needProcessing = true;
+    size_t counter = bufferSize;
+    uint32_t readSize = bufferSize / 2;
+    while( isNeedProcessing() ) {
+
+        getComplex( complexBuff.data(), readSize );
+
+        counter -= readSize;
+
+        if( counter == 0 ) {
+            process( complexBuff.data(), bufferSize );
+            counter = bufferSize;
+        }
+    }
+
+}
+
+void FakeReceiver::setCallBack( std::function< void( Complex< int8_t >*, uint32_t ) > f ) {
+    process = f;
+}
 
 
 

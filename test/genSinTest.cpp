@@ -20,9 +20,9 @@ TEST( genSinTest, output_values ) {
     }
     file.close();
 
-    Generator_sin test_obj;
+    GeneratorSin test_obj;
 
-    std::vector< Complex< float > > data = test_obj.gen_sin< float >( 1, 10, 1600, 1000 );
+    std::vector< Complex< float > > data = test_obj.genSin( 1, 10, 1600, 1000 );
 
     for( uint64_t i = 0; i < 1000; ++i ) {
 
@@ -36,11 +36,11 @@ TEST( genSinTest, output_values ) {
 
 TEST( sin_test, null_size ) {
 
-    Generator_sin test_obj;
+    GeneratorSin test_obj;
 
     try {
 
-        std::vector< Complex< float > > data = test_obj.gen_sin< float >( 1, 10, 1600, 0 );
+        std::vector< Complex< float > > data = test_obj.genSin( 1, 10, 1600, 0 );
 
 
     } catch( std::runtime_error& e ) {
@@ -53,11 +53,11 @@ TEST( sin_test, null_size ) {
 
 TEST( sin_test, null_fd ) {
 
-    Generator_sin test_obj;
+    GeneratorSin test_obj;
 
     try {
 
-        std::vector< Complex< float > > data = test_obj.gen_sin< float >( 1, 10, 0, 100 );
+        std::vector< Complex< float > > data = test_obj.genSin( 1, 10, 0, 100 );
 
 
     } catch( std::runtime_error& e ) {
@@ -67,3 +67,5 @@ TEST( sin_test, null_fd ) {
     }
 
 }
+
+
