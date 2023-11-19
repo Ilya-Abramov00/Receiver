@@ -4,96 +4,41 @@
 #include "receiver/receiverfactory.h"
 #include "receiver/receiverhwimpl.h"
 
-TEST( receivers_test, DISABLED_startTest ) {
+TEST( receivers_test, DISABLED_startTestHw ) {
 
-    auto rec = ReceiverFactory::getReceiverByName( "hw" );
+    size_t bufferSize = 1024;
+    ReceiverFactory::ReceiverParams params{ ReceiverFactory::ReceiverParams::ReceiverType::hw, bufferSize };
+    auto rec = ReceiverFactory::create( params );
+
     uint32_t centralFreq = 88900000;
-    uint32_t sampleFreq = 960000;
-    RfSettings sett { centralFreq, sampleFreq, 490 };
+    uint32_t sampleFreq = 1000000;
+    int32_t gain = 490;
+    RfSettings sett { centralFreq, sampleFreq, gain };
 
     ReceiverSettings recset;
-    recset.sampleCount = ( uint32_t )4194304; // must be 512 or higher 4194304
     recset.rfSettings = sett;
 
     rec->setSettings( &recset );
 
-    rec->setCallBack( [] ( Complex< uint8_t >*, uint32_t ) {
+    float time = 1;
+    float sampleCount = time * sampleFreq;
+    size_t iterCount = std::ceil( sampleCount / bufferSize );
 
+    std::ofstream out( "out_data.iqb", std::ios::app );
+    rec->setCallBack( [ &iterCount, &rec, &out ] ( Complex< int8_t >* ptr, uint32_t size ) {
+
+        for( uint32_t i = 0; i < size; ++i ) {
+
+            out.write( reinterpret_cast< char* >( ptr ), 2 );
+            ptr++;
+        }
+
+        iterCount--;
+        if( iterCount == 0 ) {
+            rec->stop();
+        }
     } );
 
     rec->start();
-
-}
-TEST( receivers_test, DISABLED_output_values ) {
-    // real receiver:
-// auto reImpl = ReceiverFactory::getReceiverByName( "hw" );
-// uint32_t centralFreq = 88900000;
-// uint32_t sampleFreq = 960000;
-// RfSettings sett { centralFreq, sampleFreq, 490 };
-
-// ReceiverSettings recset;
-// recset.sampleCount = ( uint32_t )4194304; // must be 512 or higher 4194304
-// recset.rfSettings = sett;
-// BaseSettings* rp = &recset;
-// reImpl->setSettings( rp );
-
-// std::vector< Complex< uint8_t > > Buf;
-
-// std::vector< Complex< double > > SpBuf;
-// reImpl->getSpectrum( rp, SpBuf );
-
-// std::ofstream complexOut( "/home/anatoly/work/workC++/Demodulation/Dest/comsig11.iqc", std::fstream::binary );
-// std::ofstream spectOut( "/home/anatoly/work/workC++/Demodulation/Dest/comsig21.iqc", std::fstream::binary );
-
-// for( uint32_t i = 0; i < 4; i++ ) {
-// reImpl->getComplex( Buf );
-// uint32_t N = Buf.size();
-// complexOut.write( ( char* )( Buf.data() ), sizeof( uint8_t ) * 2 * N );
-
-// }
-// complexOut.close();
-
-// for( uint32_t i = 0; i < 4; i++ ) {
-// reImpl->getSpectrum( SpBuf );
-// uint32_t N = SpBuf.size();
-// spectOut.write( ( char* )( SpBuf.data() ), sizeof( double ) * 2 * N );
-
-// }
-// spectOut.close();
-
-    // fakeReceiver:
-
-    auto fakeImpl = ReceiverFactory::getReceiverByName( "fake" );
-
-    sinParams sin1 { 6, 10 };
-    sinParams sin2 { 0, 30 };
-    sinParams sin3 { 0, 30 };
-
-    fakeParams fakeset;
-    fakeset.fd = 1600;
-    fakeset.sampleCount = 1600;
-    fakeset.noiseLVL = 18;
-
-    fakeset.sinPar = { sin1, sin2, sin3 };
-
-    BaseSettings* fp = &fakeset;
-    fakeImpl->setSettings( fp );
-
-    std::vector< Complex< uint8_t > > Buf2;
-    fakeImpl->getComplex(  Buf2 );
-
-    std::vector< Complex< double > > SpecBuf;
-    fakeImpl->getSpectrum(  SpecBuf );
-
-    uint32_t N2 = Buf2.size();
-    uint32_t SpN2 = SpecBuf.size();
-
-    std::ofstream ComfileOut( "/home/anatoly/work/workC++/Demodulation/Dest/comsig1.iqc", std::fstream::binary );
-    ComfileOut.write( ( char* )( Buf2.data() ), sizeof( uint8_t ) * 2 * N2 );
-    ComfileOut.close();
-
-    std::ofstream SpecfileOut( "/home/anatoly/work/workC++/Demodulation/Dest/comsig2.iqc", std::fstream::binary );
-    SpecfileOut.write( ( char* )( SpecBuf.data() ), sizeof( double ) * 2 * SpN2 );
-    SpecfileOut.close();
 
 }
