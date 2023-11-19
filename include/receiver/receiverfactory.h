@@ -16,4 +16,3 @@ public:
 
     static std::unique_ptr< IReceiver > create( ReceiverParams params );
 };
-

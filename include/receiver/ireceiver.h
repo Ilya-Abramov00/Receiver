@@ -80,8 +80,6 @@ protected:
     size_t bufferSize;
 };
 
-
-
 inline IReceiver::IReceiver( size_t bufferSize ) : bufferSize( bufferSize ) {
     complexBuff.reserve( bufferSize );
 }

@@ -37,8 +37,6 @@ public:
 
 private:
 
-
-
 };
 
 #endif // GEN_SIN_H
