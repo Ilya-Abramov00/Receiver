@@ -6,7 +6,6 @@
 #include <memory>
 #include "dsp/fft.h"
 
-
 class FakeReceiver: public IReceiver {
 public:
 
@@ -51,8 +50,6 @@ private:
     }
 
 };
-
-
 
 template < typename Type >
 std::vector< Complex< Type > > FakeReceiver::GenSignal( const fakeParams* fakeset ) {
