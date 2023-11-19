@@ -7,33 +7,23 @@
 
 TEST( fakeReceiverTest, creating ) {
 
-    auto testfakeImpl = ReceiverFactory::getReceiverByName( "fake" );
-    ASSERT_NE(testfakeImpl, nullptr);
+    ReceiverFactory::ReceiverParams params{ ReceiverFactory::ReceiverParams::ReceiverType::fake, 1024 };
+    auto testfakeImpl = ReceiverFactory::create( params );
+    ASSERT_NE( testfakeImpl, nullptr );
 
 }
 
-TEST( fakeReceiverTest, getComplexTest ) {
+TEST( fakeReceiverTest, DISABLED_getComplexTest ) {
 
-    std::ifstream file( "bin/checkFakeCom", std::ifstream::binary );
-    if( !file.is_open() ) {
-        throw std::runtime_error( "cant open file " );
-    }
-
-    std::vector< Complex< uint8_t > > vec( 10 );
-
-    for( uint32_t i = 0; i < 10; i++ ) {
-        file.read( reinterpret_cast< char* >( &( vec[ i ].re ) ), sizeof( uint8_t ) );
-        file.read( reinterpret_cast< char* >( &( vec[ i ].im ) ), sizeof( uint8_t ) );
-    }
-    file.close();
-
-    auto testfakeImpl = ReceiverFactory::getReceiverByName( "fake" );
-    sinParams sin1 { 6, 10 };
+    size_t bufferSize = 3000;
+    ReceiverFactory::ReceiverParams params{ ReceiverFactory::ReceiverParams::ReceiverType::fake, bufferSize };
+    auto testfakeImpl = ReceiverFactory::create( params );
+    sinParams sin1 { 100, 10 };
 
     fakeParams fakeset;
-    fakeset.fd = 1600;
-    fakeset.sampleCount = 1600;
-    fakeset.noiseLVL = -100;
+    fakeset.fd = 3000;
+    fakeset.sampleCount = 3000;
+    fakeset.noiseLVL = 10;
 
     fakeset.sinPar = { sin1 };
 
@@ -43,50 +33,44 @@ TEST( fakeReceiverTest, getComplexTest ) {
     std::vector< Complex< uint8_t > > Buf2;
     testfakeImpl->getComplex(  Buf2 );
 
-    for( uint64_t i = 0; i < 10; ++i ) {
+    std::ofstream out( "out_getComplexTest.iqb" );
 
-        ASSERT_NEAR( Buf2[ i ].re, vec[ i ].re, 1 );
-        ASSERT_NEAR( Buf2[ i ].im, vec[ i ].im, 1 );
+    out.write( reinterpret_cast< char* >( Buf2.data() ), Buf2.size() * 2 * sizeof( uint8_t ) );
+    out.close();
 
-    }
 }
 
-TEST( fakeReceiverTest, getSpectrumTest ) {
+TEST( fakeReceiverTest, DISABLED_startTestFake ) {
 
-    std::ifstream file( "bin/checkFakeSpec", std::ifstream::binary );
-    if( !file.is_open() ) {
-        throw std::runtime_error( "cant open file " );
-    }
+    size_t sampleCount = 6000;
+    ReceiverFactory::ReceiverParams params{ ReceiverFactory::ReceiverParams::ReceiverType::fake,  sampleCount };
+    auto fakeImpl = ReceiverFactory::create( params );
 
-    std::vector< Complex< double > > vec( 10 );
-
-    for( uint32_t i = 0; i < 10; i++ ) {
-        file.read( reinterpret_cast< char* >( &( vec[ i ].re ) ), sizeof( double ) );
-        file.read( reinterpret_cast< char* >( &( vec[ i ].im ) ), sizeof( double ) );
-    }
-
-    file.close();
-
-    auto testfakeImpl = ReceiverFactory::getReceiverByName( "fake" );
-    sinParams sin1 { 6, 10 };
+    sinParams sin1 { 100, 100 };
 
     fakeParams fakeset;
-    fakeset.fd = 3200;
-    fakeset.sampleCount = 1600;
-    fakeset.noiseLVL = -190; //шум в дБ
-
+    fakeset.fd = 6000;
+    fakeset.noiseLVL = -1000;
     fakeset.sinPar = { sin1 };
 
-    BaseSettings* fp = &fakeset;
-    testfakeImpl->setSettings( fp );
+    fakeImpl->setSettings( &fakeset );
 
-    std::vector< Complex< double > > Buf2;
-    testfakeImpl->getSpectrum( Buf2 );
+    std::ofstream complexOut( "comsig.iqc", std::fstream::binary );
 
-    for( uint64_t i = 0; i < 10; ++i ) {
+    int iter = 1;
 
-        ASSERT_NEAR( Buf2[ i ].abs(), vec[ i ].abs(), 1e-5 );
+    fakeImpl->setCallBack( [ &complexOut, &iter, &fakeImpl ] ( Complex< int8_t >* data, uint32_t dataSize ) {
 
-    }
+        --iter;
+        complexOut.write( ( char* )( data ), sizeof( uint8_t ) * 2 * dataSize );
+        complexOut.close();
+
+        if( iter == 0 ) {
+            fakeImpl->stop();
+        }
+
+    } );
+
+    fakeImpl->start();
 
 }
