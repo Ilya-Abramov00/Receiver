@@ -11,7 +11,7 @@ public:
         }
         receiverType;
 
-        size_t bufferSize{ };
+        SettingTransaction settingTransaction;
     };
 
     static std::unique_ptr< IReceiver > create( ReceiverParams params );

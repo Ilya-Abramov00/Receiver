@@ -9,7 +9,7 @@
 class FakeReceiver: public IReceiver {
 public:
 
-    FakeReceiver( size_t bufferSize );
+    FakeReceiver( SettingTransaction settingTransaction );
     ~FakeReceiver();
 
     virtual void setSettings(  BaseSettings* settings )  override final;
@@ -20,6 +20,7 @@ public:
     virtual void getSpectrum(  SpectBuff& out ) override final;
 
     virtual void start() override final;
+    virtual void stop() override final;
     void setCallBack( std::function< void( Complex< int8_t >*, uint32_t ) > f ) override final;
 
 private:
