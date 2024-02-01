@@ -6,7 +6,13 @@
 #include <thread>
 #include <vector>
 
-TEST(receivers_test, startTestModeHwSingle) {
+class ReceiverTest : public ::testing::Test {
+protected:
+    void SetUp() { }
+    void TearDown() { }
+};
+
+TEST_F(ReceiverTest, startTestModeHwSingle) {
     size_t bufferSize = 512;
     ReceiverFactory::ReceiverParams params{ReceiverFactory::ReceiverParams::ReceiverType::hw,
                                            {bufferSize, TypeTransaction::single, 0}};
@@ -42,7 +48,7 @@ TEST(receivers_test, startTestModeHwSingle) {
     rec->start();
 }
 
-TEST(receivers_test, startTestModeHwLoop) {
+TEST_F(ReceiverTest, startTestModeHwLoop) {
     size_t irqSize    = 4;
     size_t bufferSize = 512 * irqSize;
     ReceiverFactory::ReceiverParams params{ReceiverFactory::ReceiverParams::ReceiverType::hw,
@@ -61,9 +67,10 @@ TEST(receivers_test, startTestModeHwLoop) {
     rec->setTestMode();
 
     uint8_t last;
-    bool begin = true;
-    rec->setCallBack([&last, &begin](Complex<int8_t>* ptr, uint32_t size) {
-        std::cout << "Получен callback c size = " << size << std::endl;
+    bool begin       = true;
+    std::size_t iter = 0;
+    rec->setCallBack([&last, &begin, &iter](Complex<int8_t>* ptr, uint32_t size) {
+        iter++;
         auto uintPtr = (uint8_t*)(ptr);
         for(uint32_t i = 0; i != size; ++i) {
             if(i == 0) {
@@ -81,13 +88,14 @@ TEST(receivers_test, startTestModeHwLoop) {
             }
         }
     });
+    std::cout << "Получено " << iter << " callback";
     rec->start();
-    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     rec->stop(); // нужно чтобы драйвер успел остановить поток loop перед тем как мы закроем свисток
-    std::this_thread::sleep_for(std::chrono::seconds(3));
+    std::this_thread::sleep_for(std::chrono::milliseconds(300));
 }
 
-TEST(receivers_test, startHwLoop) {
+TEST_F(ReceiverTest, startHwLoop) {
     size_t irqSize    = 4;
     size_t bufferSize = 1024 * 4 * irqSize;
     ReceiverFactory::ReceiverParams params{ReceiverFactory::ReceiverParams::ReceiverType::hw,
@@ -114,10 +122,10 @@ TEST(receivers_test, startHwLoop) {
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
     rec->stop(); // нужно чтобы драйвер успел остановить поток loop перед тем как мы закроем свисток
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    std::this_thread::sleep_for(std::chrono::milliseconds(300));
 }
 
-TEST(receivers_test, startHwSingle) {
+TEST_F(ReceiverTest, startHwSingle) {
     size_t bufferSize = 512 * 256;
     ReceiverFactory::ReceiverParams params{ReceiverFactory::ReceiverParams::ReceiverType::hw,
                                            {bufferSize, TypeTransaction::single, 0}};
