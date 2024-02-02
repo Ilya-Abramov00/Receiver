@@ -3,6 +3,7 @@
 #include "ireceiver.h"
 #include "rtl-sdr.h"
 
+#include <list>
 #include <memory>
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,7 +12,7 @@
 #include <vector>
 class ReceiverHWImpl : public IReceiver {
 public:
-    ReceiverHWImpl(SettingTransaction settingTransaction);
+    ReceiverHWImpl(SettingTransaction settingTransaction, uint32_t numberDev = 0);
     ~ReceiverHWImpl() override;
 
     virtual bool getComplex(const BaseSettings* settings, Buffer& out) override final;
@@ -34,4 +35,25 @@ private:
     virtual bool getComplex(Complex<int8_t>* complexBuff, uint32_t sizeOfBuff) override final;
     void startLoop();
     void startSingle();
+};
+
+class RtlSdrDev {
+public:
+    static uint32_t deviceSearch() {
+        char vendor[256] = {0}, product[256] = {0}, serial[256] = {0};
+        auto device_count = rtlsdr_get_device_count();
+        if(!device_count) {
+            std::cerr << "No supported devices found.\n";
+            return {};
+        }
+        std::cerr << "Found " << device_count << " device(s):\n";
+        for(uint32_t i = 0; i < device_count; i++) {
+            if(rtlsdr_get_device_usb_strings(i, vendor, product, serial) == 0) {
+                std::cerr << i << ": " << vendor << ", " << product << ", " << serial << "\n";
+            } else {
+                std::cerr << i << "Failed to query data\n";
+            }
+        }
+        return device_count;
+    }
 };

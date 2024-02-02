@@ -23,12 +23,12 @@ struct RfSettings {
 
 struct ReceiverSettings : public BaseSettings {
     RfSettings rfSettings;
-    // uint32_t sampleCount; //size
     int n_read;
     int sync_mode{1};
     int direct_sampling{0};
     int dithering{1};
 
+    explicit ReceiverSettings(const RfSettings& rfSettings) : rfSettings(rfSettings) { }
     ~ReceiverSettings() override = default;
 };
 
@@ -50,9 +50,9 @@ const std::size_t maxBufferSize = 256 * 16384;
 
 enum class TypeTransaction { single, loop };
 struct SettingTransaction {
-    std::size_t bufferSize;
-    TypeTransaction typeTransaction;
-    std::size_t ircSize;
+    std::size_t bufferSize{0};
+    TypeTransaction typeTransaction{0};
+    std::size_t ircSize{0};
     bool testMode = false;
 };
 class IReceiver {
@@ -66,11 +66,8 @@ public:
     virtual bool getComplex(const BaseSettings* sett, Buffer&)     = 0;
     virtual void getSpectrum(const BaseSettings* sett, SpectBuff&) = 0;
 
-    virtual void start() = 0;
-    virtual void stop()  = 0;
-    void setTestMode() {
-        settingTransaction.testMode = true;
-    }
+    virtual void start()                                                        = 0;
+    virtual void stop()                                                         = 0;
     virtual bool getComplex(Buffer&)                                            = 0;
     virtual void getSpectrum(SpectBuff&)                                        = 0;
     virtual void setCallBack(std::function<void(Complex<int8_t>*, uint32_t)> f) = 0;
@@ -89,11 +86,5 @@ protected:
 };
 
 inline IReceiver::IReceiver(SettingTransaction settingTransaction) : settingTransaction(settingTransaction) {
-    switch(settingTransaction.typeTransaction) {
-        case(TypeTransaction::single):
-            break;
-        case(TypeTransaction::loop):
-            break;
-    }
     complexBuff.reserve(settingTransaction.bufferSize);
 }

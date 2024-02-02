@@ -14,7 +14,7 @@ TEST(fakeReceiverTest, creating) {
 
 TEST(fakeReceiverTest, getComplexTest) {
     size_t bufferSize = 3000;
-    ReceiverFactory::ReceiverParams params{ReceiverFactory::ReceiverParams::ReceiverType::fake,
+    ReceiverFactory::ReceiverParams params{ReceiverFactory::ReceiverParams::ReceiverType::fake,0,
                                            {bufferSize, TypeTransaction::loop}};
     auto testfakeImpl = ReceiverFactory::create(params);
     sinParams sin1{100, 10};
@@ -40,7 +40,7 @@ TEST(fakeReceiverTest, getComplexTest) {
 
 TEST(fakeReceiverTest, startTestFake) {
     size_t sampleCount = 6000;
-    ReceiverFactory::ReceiverParams params{ReceiverFactory::ReceiverParams::ReceiverType::fake,
+    ReceiverFactory::ReceiverParams params{ReceiverFactory::ReceiverParams::ReceiverType::fake,0,
                                            {sampleCount, TypeTransaction::loop}};
     auto fakeImpl = ReceiverFactory::create(params);
 

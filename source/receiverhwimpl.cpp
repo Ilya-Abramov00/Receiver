@@ -24,7 +24,6 @@ struct ReceiverHWImpl::Pimpl {
     rtlsdr_dev_t* dev{nullptr};
     int do_exit{0};
 
-    int deviceSearch(char const* s);
     int setCenterFreq(uint32_t freq);
     int setSampleRate(uint32_t samp_rate);
     int setAutoGain();
@@ -39,8 +38,9 @@ struct ReceiverHWImpl::Pimpl {
     static uint32_t roundPowerTwo(uint32_t& size);
 };
 
-ReceiverHWImpl::ReceiverHWImpl(SettingTransaction settingTransaction) :
+ReceiverHWImpl::ReceiverHWImpl(SettingTransaction settingTransaction, uint32_t numberDev) :
     IReceiver(settingTransaction), m_d(std::make_unique<Pimpl>()) {
+    m_d->dev_index = numberDev;
     m_d->open();
 }
 
@@ -50,7 +50,7 @@ ReceiverHWImpl::~ReceiverHWImpl() {
     if(r < 0) {
         std::cerr << "FAIL close: " << r;
     } else {
-        std::cerr << "close device \n";
+        std::cerr << "close device " << m_d->dev_index << "\n";
     }
 }
 
@@ -59,8 +59,7 @@ ReceiverHWImpl::~ReceiverHWImpl() {
  * deviceSearch(), чтобы определить что это за свисток.
  */
 void ReceiverHWImpl::Pimpl::open() {
-    dev_index = deviceSearch("0");
-    int r     = rtlsdr_open(&dev, (uint32_t)dev_index);
+    int r = rtlsdr_open(&dev, (uint32_t)dev_index);
     if(r < 0) {
         std::cerr << "Failed to open rtlsdr device" << dev_index << "\n";
         exit(1);
@@ -226,73 +225,6 @@ void ReceiverHWImpl::getSpectrum(const BaseSettings* settings, SpectBuff& out) {
     out.resize(size);
 
     fft(signalDouble, out, signalDouble.size());
-}
-
-/**
- * @brief Функция для поиска устройства.
- * Также она выводит название устройства, производителя и серию.
- */
-int ReceiverHWImpl::Pimpl::deviceSearch(char const* s) {
-    uint32_t device;
-    int offset;
-    char* s2;
-    char vendor[256] = {0}, product[256] = {0}, serial[256] = {0};
-    auto device_count = rtlsdr_get_device_count();
-    if(!device_count) {
-        std::cerr << "No supported devices found.\n";
-        return -1;
-    }
-    std::cerr << "Found " << device_count << " device(s):\n";
-    for(uint32_t i = 0; i < device_count; i++) {
-        if(rtlsdr_get_device_usb_strings(i, vendor, product, serial) == 0) {
-            std::cerr << i << ": " << vendor << ", " << product << ", " << serial << "\n";
-        } else {
-            std::cerr << i << "Failed to query data\n";
-        }
-    }
-
-    /* does string look like raw id number */
-    device = (int)strtol(s, &s2, 0);
-    if(s2[0] == '\0' && device < device_count) {
-        std::cerr << "Using device " << device << ": " << rtlsdr_get_device_name((uint32_t)device) << "\n";
-        return device;
-    }
-    /* does string exact match a serial */
-    for(uint32_t i = 0; i < device_count; i++) {
-        rtlsdr_get_device_usb_strings(i, vendor, product, serial);
-        if(strcmp(s, serial) != 0) {
-            continue;
-        }
-        device = i;
-        std::cerr << "Using device " << device << ": " << rtlsdr_get_device_name((uint32_t)device) << "\n";
-        return device;
-    }
-    /* does string prefix match a serial */
-    for(uint32_t i = 0; i < device_count; i++) {
-        rtlsdr_get_device_usb_strings(i, vendor, product, serial);
-        if(strncmp(s, serial, strlen(s)) != 0) {
-            continue;
-        }
-        device = i;
-        std::cerr << "Using device " << device << ": " << rtlsdr_get_device_name((uint32_t)device) << "\n";
-        return device;
-    }
-    /* does string suffix match a serial */
-    for(uint32_t i = 0; i < device_count; i++) {
-        rtlsdr_get_device_usb_strings(i, vendor, product, serial);
-        offset = strlen(serial) - strlen(s);
-        if(offset < 0) {
-            continue;
-        }
-        if(strncmp(s, serial + offset, strlen(s)) != 0) {
-            continue;
-        }
-        device = i;
-        std::cerr << "Using device " << device << ": " << rtlsdr_get_device_name((uint32_t)device) << "\n";
-        return device;
-    }
-    std::cerr << "No matching devices found.\n";
-    return -1;
 }
 
 /**
@@ -496,9 +428,13 @@ void ReceiverHWImpl::start() {
 void ReceiverHWImpl::startLoop() {
     m_d->resetBuffer(); // должен быть обязательно!!
 
+    //auto e = rtlsdr_set_tuner_bandwidth(m_d->dev, 0.5e6);//не понятно насклолько влияет этот метод, но замечано, что он ломает счетчик
+    //if(e < 0) {
+    //    throw "FAIL set_tuner_bandwidth: ";
+   // };
     callback = [](uint8_t* buf, uint32_t size, void* ctx) {
         ReceiverHWImpl* d
-            = reinterpret_cast<ReceiverHWImpl*>(ctx); // контекст которые мы переделали, кастим к объекту класса
+            = reinterpret_cast<ReceiverHWImpl*>(ctx); // контекст которые мы передали, кастим к объекту класса
 
         d->process((Base::Complex<signed char>*)buf, size);
     };
@@ -515,6 +451,7 @@ void ReceiverHWImpl::startLoop() {
 }
 
 void ReceiverHWImpl::startSingle() {
+    m_d->resetBuffer();
     while(isNeedProcessing()) {
         getComplex(complexBuff.data(), settingTransaction.bufferSize);
         process(complexBuff.data(), settingTransaction.bufferSize);
@@ -522,14 +459,13 @@ void ReceiverHWImpl::startSingle() {
 }
 void ReceiverHWImpl::stop() {
     {
-        needProcessing = false;
-
-        if(settingTransaction.typeTransaction == TypeTransaction::loop) {
+        if(settingTransaction.typeTransaction == TypeTransaction::loop && needProcessing) {
             auto r = rtlsdr_cancel_async(m_d->dev);
             if(r < 0) {
                 std::cerr << "FAIL STOP\n" << r;
             }
             thread->join();
         }
+        needProcessing = false;
     }
 }
