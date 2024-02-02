@@ -3,13 +3,9 @@
 #include "ireceiver.h"
 #include "rtl-sdr.h"
 
-#include <list>
 #include <memory>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <thread>
-#include <vector>
+
 class ReceiverHWImpl : public IReceiver {
 public:
     ReceiverHWImpl(SettingTransaction settingTransaction, uint32_t numberDev = 0);

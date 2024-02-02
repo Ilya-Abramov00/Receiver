@@ -5,12 +5,7 @@
 #include "receiver/receiverfactory.h"
 #include "rtl-sdr.h"
 
-#include <errno.h>
 #include <iostream>
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <thread>
 using namespace Base;
 
@@ -428,10 +423,10 @@ void ReceiverHWImpl::start() {
 void ReceiverHWImpl::startLoop() {
     m_d->resetBuffer(); // должен быть обязательно!!
 
-    //auto e = rtlsdr_set_tuner_bandwidth(m_d->dev, 0.5e6);//не понятно насклолько влияет этот метод, но замечано, что он ломает счетчик
-    //if(e < 0) {
-    //    throw "FAIL set_tuner_bandwidth: ";
-   // };
+    // auto e = rtlsdr_set_tuner_bandwidth(m_d->dev, 0.5e6);//не понятно насклолько влияет этот метод, но замечано, что
+    // он ломает счетчик if(e < 0) {
+    //     throw "FAIL set_tuner_bandwidth: ";
+    // };
     callback = [](uint8_t* buf, uint32_t size, void* ctx) {
         ReceiverHWImpl* d
             = reinterpret_cast<ReceiverHWImpl*>(ctx); // контекст которые мы передали, кастим к объекту класса
@@ -440,7 +435,7 @@ void ReceiverHWImpl::startLoop() {
     };
 
     thread = std::make_unique<std::thread>([this]() {
-        auto r = rtlsdr_read_async(m_d->dev, callback, this, settingTransaction.ircSize,
+        auto r = rtlsdr_read_async(m_d->dev, callback, this, settingTransaction.ircSize * 2,
                                    settingTransaction.bufferSize
                                        / settingTransaction.ircSize); // this в данном случае является контекстом
 
@@ -451,7 +446,6 @@ void ReceiverHWImpl::startLoop() {
 }
 
 void ReceiverHWImpl::startSingle() {
-    m_d->resetBuffer();
     while(isNeedProcessing()) {
         getComplex(complexBuff.data(), settingTransaction.bufferSize);
         process(complexBuff.data(), settingTransaction.bufferSize);

@@ -7,8 +7,7 @@ FakeReceiver::~FakeReceiver() {
 }
 
 void FakeReceiver::setSettings(BaseSettings* settings) {
-    fakeParams* fakeset = dynamic_cast<fakeParams*>(settings);
-    this->f_p           = fakeset;
+    this->f_p = dynamic_cast<fakeParams*>(settings);
 }
 
 bool FakeReceiver::getComplex(const BaseSettings* settings, Buffer& out) {
