@@ -409,6 +409,12 @@ void ReceiverHWImpl::setCallBack(std::function<void(Complex<int8_t>*, uint32_t)>
 void ReceiverHWImpl::start() {
     needProcessing = true;
 
+    auto Fs = rtlsdr_get_sample_rate(m_d->dev);
+    if(Fs <= 0) {
+        std::cerr << "WARNING: Failed sample_rate.\n";
+    }
+    std::cout << "sample_rate = " << double(Fs) / 10e6 << " МГц" << std::endl;
+
     if(rtlsdr_set_testmode(m_d->dev, settingTransaction.testMode)) {
         std::cerr << "WARNING: Failed to set testMode.\n";
     }

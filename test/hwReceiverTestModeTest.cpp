@@ -50,8 +50,8 @@ TEST_F(ReceiverTestModeTest, startTestModeHwLoop) {
         ReceiverFactory::ReceiverParams::ReceiverType::hw, 0, {bufferSize, TypeTransaction::loop, irqSize, true}};
     auto rec = ReceiverFactory::create(params);
 
-    uint32_t centralFreq = 0;
-    uint32_t sampleFreq  = 0;
+    uint32_t centralFreq = 10e6;
+    uint32_t sampleFreq  = 1.6e6;
     int32_t gain         = 0;
     RfSettings sett{centralFreq, sampleFreq, gain};
 

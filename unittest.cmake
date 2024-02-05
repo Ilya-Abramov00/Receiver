@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.5)
 if(UNITTEST AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/test)
         add_compile_options(-O0)
 	if(NOT TEST_OUTPUT_PATH)
