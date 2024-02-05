@@ -18,8 +18,8 @@ TEST_F(ReceiverTestModeTest, startTestModeHwSingle) {
         ReceiverFactory::ReceiverParams::ReceiverType::hw, 0, {bufferSize, TypeTransaction::single, 0, true}};
     auto rec = ReceiverFactory::create(params);
 
-    uint32_t centralFreq = 0;
-    uint32_t sampleFreq  = 0;
+    uint32_t centralFreq = 10e6;
+    uint32_t sampleFreq  = 1.6e6;
     int32_t gain         = 0;
     RfSettings sett{centralFreq, sampleFreq, gain};
 
@@ -45,13 +45,13 @@ TEST_F(ReceiverTestModeTest, startTestModeHwSingle) {
 
 TEST_F(ReceiverTestModeTest, startTestModeHwLoop) {
     size_t irqSize    = 8;
-    size_t bufferSize = 1024 * 256 * irqSize;
+    size_t bufferSize = 1024 * 1024*2;
     ReceiverFactory::ReceiverParams params{
         ReceiverFactory::ReceiverParams::ReceiverType::hw, 0, {bufferSize, TypeTransaction::loop, irqSize, true}};
     auto rec = ReceiverFactory::create(params);
 
-    uint32_t centralFreq = 10e6;
-    uint32_t sampleFreq  = 1.6e6;
+    uint32_t centralFreq = 1e7;
+    uint32_t sampleFreq  = 2.4e6;
     int32_t gain         = 0;
     RfSettings sett{centralFreq, sampleFreq, gain};
 
@@ -82,9 +82,9 @@ TEST_F(ReceiverTestModeTest, startTestModeHwLoop) {
 }
 
 TEST_F(ReceiverTestModeTest, startTestModeHwSingle_2_Dev) {
-    size_t bufferSize    = 1024 *4;
-    uint32_t centralFreq = 0;
-    uint32_t sampleFreq  = 0;
+    size_t bufferSize    = 1024 * 4;
+    uint32_t centralFreq = 10e6;
+    uint32_t sampleFreq  = 1.6e6;
     int32_t gain         = 0;
     RfSettings sett{centralFreq, sampleFreq, gain};
 
@@ -100,22 +100,30 @@ TEST_F(ReceiverTestModeTest, startTestModeHwSingle_2_Dev) {
         {ReceiverFactory::ReceiverParams::ReceiverType::hw, 1, {bufferSize, TypeTransaction::single, 0, true}});
 
     std::vector<uint8_t> buf1(0, bufferSize);
-    rec1->setCallBack([&rec1, &buf1](Complex<int8_t>* ptr, uint32_t size) {
+    size_t iterCount1 = 3;
+    rec1->setCallBack([&rec1, &buf1, &iterCount1](Complex<int8_t>* ptr, uint32_t size) {
         auto uintPtr = (uint8_t*)(ptr);
         buf1.insert(buf1.end(), uintPtr, uintPtr + size);
-
-        rec1->stop();
+        iterCount1--;
+        if(iterCount1 == 0) {
+            rec1->stop();
+        }
     });
 
     std::vector<uint8_t> buf2(0, bufferSize);
-    rec2->setCallBack([&rec2, &buf2](Complex<int8_t>* ptr, uint32_t size) {
+    size_t iterCount2 = 3;
+    rec2->setCallBack([&rec2, &buf2, &iterCount2](Complex<int8_t>* ptr, uint32_t size) {
         auto uintPtr = (uint8_t*)(ptr);
         buf2.insert(buf2.end(), uintPtr, uintPtr + size);
 
-        rec2->stop();
+        iterCount2--;
+        if(iterCount2 == 0) {
+            rec2->stop();
+        }
     });
 
     rec1->setSettings(&recset);
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
     rec2->setSettings(&recset);
 
     std::thread t1([&rec1]() { rec1->start(); });
@@ -127,16 +135,16 @@ TEST_F(ReceiverTestModeTest, startTestModeHwSingle_2_Dev) {
         ASSERT_EQ(uint8_t(buf1[i - 1] + 1), uint8_t(buf1[i]));
     }
     for(std::size_t i = 1; i != buf2.size(); i++) {
-        std::cout << i << "  " << +buf2[i] << std::endl;
+        // std::cout << i << "  " << +buf2[i] << std::endl;
         ASSERT_EQ(uint8_t(buf2[i - 1] + 1), uint8_t(buf2[i]));
     }
 }
 
 TEST_F(ReceiverTestModeTest, startTestModeHwLoop_2_Dev) {
     size_t ircSize       = 4;
-    size_t bufferSize    = 1024  * ircSize;
-    uint32_t centralFreq = 0;
-    uint32_t sampleFreq  = 0;
+    size_t bufferSize    = 1024 * ircSize;
+    uint32_t centralFreq = 10e6;
+    uint32_t sampleFreq  = 1.6e6;
     int32_t gain         = 0;
     RfSettings sett{centralFreq, sampleFreq, gain};
 
@@ -164,7 +172,9 @@ TEST_F(ReceiverTestModeTest, startTestModeHwLoop_2_Dev) {
         auto uintPtr = (uint8_t*)(ptr);
         buf2.insert(buf2.end(), uintPtr, uintPtr + size);
     });
+
     rec1->setSettings(&recset);
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
     rec2->setSettings(&recset);
 
     rec1->start();
@@ -178,7 +188,7 @@ TEST_F(ReceiverTestModeTest, startTestModeHwLoop_2_Dev) {
         ASSERT_EQ(uint8_t(buf1[i - 1] + 1), uint8_t(buf1[i]));
     }
     for(std::size_t i = 1; i != buf2.size(); i++) {
-        std::cout << i << "  " << +buf2[i] << std::endl;
+        //  std::cout << i << "  " << +buf2[i] << std::endl;
         ASSERT_EQ(uint8_t(buf2[i - 1] + 1), uint8_t(buf2[i]));
     }
 }

@@ -228,9 +228,10 @@ void ReceiverHWImpl::getSpectrum(const BaseSettings* settings, SpectBuff& out) {
 int ReceiverHWImpl::Pimpl::setCenterFreq(uint32_t freq) {
     auto r = rtlsdr_set_center_freq(dev, freq);
     if(r < 0)
-        std::cerr << "WARNING: Failed to set center freq.\n";
-    else
-        std::cerr << "Tuned to " << freq << " Hz.\n";
+        std::cerr << "WARNING: Failed to set center freq." << std::endl;
+
+    freq = rtlsdr_get_center_freq(dev);
+    std::cerr << "Tuned to sentral freq " << double(freq) / 1e3 << " kHz." << std::endl;
     return r;
 }
 
@@ -239,11 +240,16 @@ int ReceiverHWImpl::Pimpl::setCenterFreq(uint32_t freq) {
  */
 int ReceiverHWImpl::Pimpl::setSampleRate(uint32_t samp_rate) {
     auto r = rtlsdr_set_sample_rate(dev, samp_rate);
-    if(r < 0)
-        std::cerr << "WARNING: Failed to set sample rate.\n";
-    else
-        std::cerr << "Sampling at " << samp_rate << "\n";
-    return r;
+    if(r < 0) {
+        std::cerr << "WARNING: Failed to set sample rate." << std::endl;
+    }
+    auto Fs = rtlsdr_get_sample_rate(dev);
+    if(Fs <= 0) {
+        std::cerr << "WARNING: Failed to get sample rate." << std::endl;
+    }
+    std::cerr << "Sampling at " << double(Fs) / 1e6 << " МГц" << std::endl;
+
+    return Fs;
 }
 
 /**
@@ -253,9 +259,9 @@ int ReceiverHWImpl::Pimpl::setSampleRate(uint32_t samp_rate) {
 int ReceiverHWImpl::Pimpl::setAutoGain() {
     auto r = rtlsdr_set_tuner_gain_mode(dev, 0);
     if(r != 0)
-        std::cerr << "WARNING: Failed to set tuner gain.\n";
+        std::cerr << "WARNING: Failed to set tuner gain." << std::endl;
     else
-        std::cerr << "Tuner gain set to automatic.\n";
+        std::cerr << "Tuner gain set to automatic." << std::endl;
     return r;
 }
 
@@ -269,7 +275,7 @@ int ReceiverHWImpl::Pimpl::nearestGain(int gain) {
 
     auto r = rtlsdr_set_tuner_gain_mode(dev, 1);
     if(r < 0) {
-        std::cerr << "WARNING: Failed to enable manual gain.\n";
+        std::cerr << "WARNING: Failed to enable manual gain." << std::endl;
         return r;
     }
 
@@ -385,7 +391,7 @@ int ReceiverHWImpl::Pimpl::resetBuffer() {
     int r;
     r = rtlsdr_reset_buffer(dev);
     if(r < 0)
-        std::cerr << "WARNING: Failed to reset buffers.\n";
+        std::cerr << "WARNING: Failed to reset buffers." << std::endl;
     return r;
 }
 
@@ -409,14 +415,8 @@ void ReceiverHWImpl::setCallBack(std::function<void(Complex<int8_t>*, uint32_t)>
 void ReceiverHWImpl::start() {
     needProcessing = true;
 
-    auto Fs = rtlsdr_get_sample_rate(m_d->dev);
-    if(Fs <= 0) {
-        std::cerr << "WARNING: Failed sample_rate.\n";
-    }
-    std::cout << "sample_rate = " << double(Fs) / 10e6 << " МГц" << std::endl;
-
     if(rtlsdr_set_testmode(m_d->dev, settingTransaction.testMode)) {
-        std::cerr << "WARNING: Failed to set testMode.\n";
+        std::cerr << "WARNING: Failed to set testMode." << std::endl;
     }
 
     if(settingTransaction.typeTransaction == TypeTransaction::single) {
@@ -429,10 +429,9 @@ void ReceiverHWImpl::start() {
 void ReceiverHWImpl::startLoop() {
     m_d->resetBuffer(); // должен быть обязательно!!
 
-    // auto e = rtlsdr_set_tuner_bandwidth(m_d->dev, 0.5e6);//не понятно насклолько влияет этот метод, но замечано, что
-    // он ломает счетчик if(e < 0) {
-    //     throw "FAIL set_tuner_bandwidth: ";
-    // };
+    /*  auto e = rtlsdr_set_tuner_bandwidth(m_d->dev, 0.5e6); // не понятно насколько влияет этот метод вообще, но
+      замечано, что он ломает счетчик if(e < 0) { throw "FAIL set_tuner_bandwidth: ";
+      };*/
     callback = [](uint8_t* buf, uint32_t size, void* ctx) {
         ReceiverHWImpl* d
             = reinterpret_cast<ReceiverHWImpl*>(ctx); // контекст которые мы передали, кастим к объекту класса
@@ -446,7 +445,7 @@ void ReceiverHWImpl::startLoop() {
                                        / settingTransaction.ircSize); // this в данном случае является контекстом
 
         if(r < 0) {
-            std::cout << "FAIL read_async: " << r;
+            std::cerr << "FAIL read_async: " << r << std::endl;
         };
     });
 }
@@ -462,7 +461,7 @@ void ReceiverHWImpl::stop() {
         if(settingTransaction.typeTransaction == TypeTransaction::loop && needProcessing) {
             auto r = rtlsdr_cancel_async(m_d->dev);
             if(r < 0) {
-                std::cerr << "FAIL STOP\n" << r;
+                std::cerr << "FAIL Stop" << r << std::endl;
             }
             thread->join();
         }
