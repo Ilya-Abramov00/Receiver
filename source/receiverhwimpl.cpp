@@ -12,12 +12,12 @@ using namespace Base;
 struct ReceiverHWImpl::Pimpl {
     void set(const ReceiverSettings& settings);
     void open();
-    int n_read{0};
     int dev_index{0};
     int dev_given{0};
     uint32_t samCount;
     rtlsdr_dev_t* dev{nullptr};
     int do_exit{0};
+    rtlsdr_read_async_cb_t callback;
 
     int setCenterFreq(uint32_t freq);
     int setSampleRate(uint32_t samp_rate);
@@ -29,12 +29,11 @@ struct ReceiverHWImpl::Pimpl {
     void setAgcMode(int on);
     void setOffsetTuningOn();
     int resetBuffer();
-
+    int setTunerBandwidth(uint32_t bw);
     static uint32_t roundPowerTwo(uint32_t& size);
 };
 
-ReceiverHWImpl::ReceiverHWImpl(SettingTransaction settingTransaction, uint32_t numberDev) :
-    IReceiver(settingTransaction), m_d(std::make_unique<Pimpl>()) {
+ReceiverHWImpl::ReceiverHWImpl(uint32_t numberDev) : IReceiver(), m_d(std::make_unique<Pimpl>()) {
     m_d->dev_index = numberDev;
     m_d->open();
 }
@@ -73,35 +72,35 @@ void ReceiverHWImpl::Pimpl::open() {
  * усиления.
  */
 
-void ReceiverHWImpl::setSettings(BaseSettings* sett) {
-    ReceiverSettings* realset = dynamic_cast<ReceiverSettings*>(sett);
+void ReceiverHWImpl::setSettingsTransaction(BaseSettingTransaction* sett) {
+    settingTransaction = *dynamic_cast<SettingTransaction*>(sett);
+    complexBuff.resize(settingTransaction.bufferSize);
+}
 
+void ReceiverHWImpl::setSettingsReceiver(BaseSettingsReceiver* sett) {
+    ReceiverSettings* realset = dynamic_cast<ReceiverSettings*>(sett);
     m_d->set(*realset);
-    m_d->samCount = realset->sampleCount;
 }
 
 void ReceiverHWImpl::Pimpl::set(const ReceiverSettings& settings) {
-    if(n_read == 0) {
-        n_read = settings.n_read;
+    samCount = settings.sampleCount;
+    if(settings.direct_sampling)
+        setDirectSampling(settings.direct_sampling);
 
-        if(settings.direct_sampling)
-            setDirectSampling(settings.direct_sampling);
+    setSampleRate(settings.sampleFreq);
 
-        setSampleRate(settings.rfSettings.sampleFreq);
+    setCenterFreq(settings.centralFreq);
 
-        setCenterFreq(settings.rfSettings.centralFreq);
-
-        if(0 == settings.rfSettings.gain) {
-            setAutoGain();
-        } else {
-            auto gain = nearestGain(settings.rfSettings.gain);
-            setGain(gain);
-        }
-
-        setPpm(settings.rfSettings.ppm_error);
-
-        setAgcMode(settings.rfSettings.agcMode);
+    if(0 == settings.gain) {
+        setAutoGain();
+    } else {
+        auto gain = nearestGain(settings.gain);
+        setGain(gain);
     }
+
+    setPpm(settings.ppm_error);
+
+    setAgcMode(settings.agcMode);
 }
 
 /**
@@ -118,108 +117,19 @@ void ReceiverHWImpl::Pimpl::set(const ReceiverSettings& settings) {
  * считанных байт будет в два раза больше, чем число считанных отсчетов. (bytesToRead = 2 * sampleCount)
  */
 
-bool ReceiverHWImpl::getComplex(const BaseSettings* settings, ReceiverHWImpl::Buffer& out) {
-    const ReceiverSettings* realset = dynamic_cast<const ReceiverSettings*>(settings);
-    m_d->set(*realset);
-    auto size = realset->sampleCount; //
-    size      = m_d->roundPowerTwo(size);
-    out.resize(size);
-    auto bytesToRead = 2 * realset->sampleCount; //
-    bytesToRead      = m_d->roundPowerTwo(bytesToRead);
-    m_d->resetBuffer();
-    auto result = rtlsdr_read_sync(m_d->dev, out.data(), bytesToRead, &(m_d->n_read));
-
-    if(result < 0)
-        std::cerr << "WARNING: sync read failed." << std::endl;
-
-    return result;
-}
-
-bool ReceiverHWImpl::getComplex(Buffer& out) {
-    auto size = m_d->samCount; //
-    size      = m_d->roundPowerTwo(size);
-    out.resize(size);
-    auto bytesToRead = 2 * m_d->samCount; //
-    bytesToRead      = m_d->roundPowerTwo(bytesToRead);
-    m_d->resetBuffer();
-    auto result = rtlsdr_read_sync(m_d->dev, out.data(), bytesToRead, &(m_d->n_read));
-
-    if(result < 0)
-        std::cerr << "WARNING: sync read failed." << std::endl;
-
-    return result;
-}
 bool ReceiverHWImpl::getComplex(Complex<int8_t>* complexBuff, uint32_t sizeOfBuff) {
     m_d->resetBuffer();
 
-    auto result = rtlsdr_read_sync(m_d->dev, reinterpret_cast<char*>(complexBuff), 2 * sizeOfBuff, &(m_d->n_read));
+    int n_read;
+    auto result = rtlsdr_read_sync(m_d->dev, reinterpret_cast<char*>(complexBuff), sizeOfBuff * 2, &n_read);
 
-    for(uint32_t i = 0; i < sizeOfBuff; ++i) {
-        complexBuff[i] = {static_cast<int8_t>(static_cast<int16_t>(complexBuff[i].re)),
-                          static_cast<int8_t>(static_cast<int16_t>(complexBuff[i].im))};
+    if(n_read != sizeOfBuff * 2) {
+        std::cerr << "Полученно " << n_read << "данных" << std::endl;
     }
-
     if(result < 0)
         std::cerr << "WARNING: sync read failed." << std::endl;
 
     return result;
-}
-void ReceiverHWImpl::getSpectrum(SpectBuff& out) {
-    IReceiver::Buffer signal;
-    auto size = m_d->samCount;
-    size      = m_d->roundPowerTwo(size);
-    signal.resize(size);
-    getComplex(signal);
-
-    std::vector<Complex<float> > signalFloat;
-    signalFloat.resize(size);
-    for(size_t i = 0; i < signalFloat.size(); i++) {
-        signalFloat[i].re = (static_cast<float>(signal[i].re) - 127.5f);
-        signalFloat[i].im = (static_cast<float>(signal[i].im) - 127.5f);
-    }
-
-    IReceiver::SpectBuff signalDouble(signalFloat.begin(), signalFloat.end());
-
-    for(size_t i = 0; i < signalDouble.size(); i++) {
-        if(i % 2 == 0)
-            signalDouble[i] = -signalDouble[i];
-    }
-    out.resize(size);
-
-    fft(signalDouble, out, signalDouble.size());
-}
-
-/**
- * @brief Метод для получения результата FFT. На вход методу подаются настройки приемника
- * и буфер, в который будут считанны значения, получившегося спектра.
- * В нем мы используем метод getComplex() для получения I и Q, чтобы в дальнейшем вычислить FFT.
- */
-
-void ReceiverHWImpl::getSpectrum(const BaseSettings* settings, SpectBuff& out) {
-    const ReceiverSettings* realset = dynamic_cast<const ReceiverSettings*>(settings);
-    m_d->set(*realset);
-    IReceiver::Buffer signal;
-    auto size = realset->sampleCount;
-    size      = m_d->roundPowerTwo(size);
-    signal.resize(size);
-    getComplex(settings, signal);
-
-    std::vector<Complex<float> > signalFloat;
-    signalFloat.resize(size);
-    for(size_t i = 0; i < signalFloat.size(); i++) {
-        signalFloat[i].re = (static_cast<float>(signal[i].re) - 127.5f);
-        signalFloat[i].im = (static_cast<float>(signal[i].im) - 127.5f);
-    }
-
-    IReceiver::SpectBuff signalDouble(signalFloat.begin(), signalFloat.end());
-
-    for(size_t i = 0; i < signalDouble.size(); i++) {
-        if(i % 2 == 0)
-            signalDouble[i] = -signalDouble[i];
-    }
-    out.resize(size);
-
-    fft(signalDouble, out, signalDouble.size());
 }
 
 /**
@@ -396,6 +306,17 @@ int ReceiverHWImpl::Pimpl::resetBuffer() {
 }
 
 /**
+ * @brief Метод для изменения полосы, но не понятно насколько он действильно меняет, но замечано, что он ломает счетчик
+ */
+int ReceiverHWImpl::Pimpl::setTunerBandwidth(uint32_t bw) {
+    auto r = rtlsdr_set_tuner_bandwidth(
+        dev, bw); // не понятно насколько влияет этот метод вообще, но замечано, что он ломает счетчик
+    if(r < 0) {
+        std::cerr << "WARNING: Failed set tuner_bandwidth " << std::endl;
+    };
+}
+
+/**
  * @brief Метод для округление до ближайшей степни двойки вверх.
  * Он необходим для того, чтобы можно было правильно считать данные.
  */
@@ -427,12 +348,7 @@ void ReceiverHWImpl::start() {
 }
 
 void ReceiverHWImpl::startLoop() {
-    m_d->resetBuffer(); // должен быть обязательно!!
-
-    /*  auto e = rtlsdr_set_tuner_bandwidth(m_d->dev, 0.5e6); // не понятно насколько влияет этот метод вообще, но
-      замечано, что он ломает счетчик if(e < 0) { throw "FAIL set_tuner_bandwidth: ";
-      };*/
-    callback = [](uint8_t* buf, uint32_t size, void* ctx) {
+    m_d->callback = [](uint8_t* buf, uint32_t size, void* ctx) {
         ReceiverHWImpl* d
             = reinterpret_cast<ReceiverHWImpl*>(ctx); // контекст которые мы передали, кастим к объекту класса
 
@@ -440,7 +356,8 @@ void ReceiverHWImpl::startLoop() {
     };
 
     thread = std::make_unique<std::thread>([this]() {
-        auto r = rtlsdr_read_async(m_d->dev, callback, this, settingTransaction.ircSize * 2,
+        m_d->resetBuffer(); // должен быть обязательно!!
+        auto r = rtlsdr_read_async(m_d->dev, m_d->callback, this, settingTransaction.ircSize,
                                    settingTransaction.bufferSize
                                        / settingTransaction.ircSize); // this в данном случае является контекстом
 
@@ -453,7 +370,7 @@ void ReceiverHWImpl::startLoop() {
 void ReceiverHWImpl::startSingle() {
     while(isNeedProcessing()) {
         getComplex(complexBuff.data(), settingTransaction.bufferSize);
-        process(complexBuff.data(), settingTransaction.bufferSize);
+        process(complexBuff.data(), settingTransaction.bufferSize * 2);
     }
 }
 void ReceiverHWImpl::stop() {

@@ -14,24 +14,24 @@ protected:
 
 TEST_F(ReceiverTestModeTest, startTestModeHwSingle) {
     size_t bufferSize = 1024 * 512;
-    ReceiverFactory::ReceiverParams params{
-        ReceiverFactory::ReceiverParams::ReceiverType::hw, 0, {bufferSize, TypeTransaction::single, 0, true}};
+    ReceiverFactory::ReceiverParams params{ReceiverFactory::ReceiverParams::ReceiverType::hw, 0};
     auto rec = ReceiverFactory::create(params);
 
-    uint32_t centralFreq = 10e6;
-    uint32_t sampleFreq  = 1.6e6;
-    int32_t gain         = 0;
-    RfSettings sett{centralFreq, sampleFreq, gain};
+    uint32_t centralFreq = 200e6;
+    uint32_t sampleFreq  = 1e6;
 
-    ReceiverSettings recset(sett);
+    ReceiverSettings set{centralFreq, sampleFreq};
+    SettingTransaction setTransaction(bufferSize, TypeTransaction::single, 0, true);
 
-    rec->setSettings(&recset);
+    rec->setSettingsReceiver(&set);
+    rec->setSettingsTransaction(&setTransaction);
 
     size_t iterCount = 3;
     rec->setCallBack([&iterCount, &rec](Complex<int8_t>* ptr, uint32_t size) {
         auto uintPtr = (uint8_t*)(ptr);
         for(uint32_t i = 1; i < size; ++i) {
-            ASSERT_TRUE(uint8_t(uintPtr[i - 1] + 1) == uintPtr[i]);
+           // std::cout << i << "  " << +uintPtr[i] << std::endl;
+            ASSERT_EQ(uint8_t(uintPtr[i - 1] + 1), uintPtr[i]);
         }
 
         iterCount--;
@@ -45,19 +45,18 @@ TEST_F(ReceiverTestModeTest, startTestModeHwSingle) {
 
 TEST_F(ReceiverTestModeTest, startTestModeHwLoop) {
     size_t irqSize    = 8;
-    size_t bufferSize = 1024 * 1024*2;
-    ReceiverFactory::ReceiverParams params{
-        ReceiverFactory::ReceiverParams::ReceiverType::hw, 0, {bufferSize, TypeTransaction::loop, irqSize, true}};
+    size_t bufferSize = 1024 * 1024;
+    ReceiverFactory::ReceiverParams params{ReceiverFactory::ReceiverParams::ReceiverType::hw, 0};
     auto rec = ReceiverFactory::create(params);
 
-    uint32_t centralFreq = 1e7;
-    uint32_t sampleFreq  = 2.4e6;
-    int32_t gain         = 0;
-    RfSettings sett{centralFreq, sampleFreq, gain};
+    uint32_t centralFreq = 200e6;
+    uint32_t sampleFreq  = 1e6;
 
-    ReceiverSettings recset(sett);
+    ReceiverSettings set{centralFreq, sampleFreq};
+    SettingTransaction setTransaction(bufferSize, TypeTransaction::loop, irqSize, true);
 
-    rec->setSettings(&recset);
+    rec->setSettingsReceiver(&set);
+    rec->setSettingsTransaction(&setTransaction);
 
     std::vector<uint8_t> buf(0);
     buf.reserve(1024 * 1024 * 512);
@@ -83,21 +82,18 @@ TEST_F(ReceiverTestModeTest, startTestModeHwLoop) {
 
 TEST_F(ReceiverTestModeTest, startTestModeHwSingle_2_Dev) {
     size_t bufferSize    = 1024 * 4;
-    uint32_t centralFreq = 10e6;
-    uint32_t sampleFreq  = 1.6e6;
-    int32_t gain         = 0;
-    RfSettings sett{centralFreq, sampleFreq, gain};
+    uint32_t centralFreq = 200e6;
+    uint32_t sampleFreq  = 1e6;
 
-    ReceiverSettings recset(sett);
+    ReceiverSettings set{centralFreq, sampleFreq};
+    SettingTransaction setTransaction(bufferSize, TypeTransaction::single, 0, true);
 
     auto count = RtlSdrDev::deviceSearch();
     ASSERT_TRUE(count == 2);
 
-    auto rec1 = ReceiverFactory::create(
-        {ReceiverFactory::ReceiverParams::ReceiverType::hw, 0, {bufferSize, TypeTransaction::single, 0, true}});
+    auto rec1 = ReceiverFactory::create({ReceiverFactory::ReceiverParams::ReceiverType::hw, 0});
 
-    auto rec2 = ReceiverFactory::create(
-        {ReceiverFactory::ReceiverParams::ReceiverType::hw, 1, {bufferSize, TypeTransaction::single, 0, true}});
+    auto rec2 = ReceiverFactory::create({ReceiverFactory::ReceiverParams::ReceiverType::hw, 1});
 
     std::vector<uint8_t> buf1(0, bufferSize);
     size_t iterCount1 = 3;
@@ -122,9 +118,11 @@ TEST_F(ReceiverTestModeTest, startTestModeHwSingle_2_Dev) {
         }
     });
 
-    rec1->setSettings(&recset);
+    rec1->setSettingsReceiver(&set);
+    rec1->setSettingsTransaction(&setTransaction);
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
-    rec2->setSettings(&recset);
+    rec2->setSettingsReceiver(&set);
+    rec2->setSettingsTransaction(&setTransaction);
 
     std::thread t1([&rec1]() { rec1->start(); });
     std::thread t2([&rec2]() { rec2->start(); });
@@ -142,22 +140,19 @@ TEST_F(ReceiverTestModeTest, startTestModeHwSingle_2_Dev) {
 
 TEST_F(ReceiverTestModeTest, startTestModeHwLoop_2_Dev) {
     size_t ircSize       = 4;
-    size_t bufferSize    = 1024 * ircSize;
+    size_t bufferSize    = 1024 * 1024;
     uint32_t centralFreq = 10e6;
-    uint32_t sampleFreq  = 1.6e6;
-    int32_t gain         = 0;
-    RfSettings sett{centralFreq, sampleFreq, gain};
+    uint32_t sampleFreq  = 2e6;
 
-    ReceiverSettings recset(sett);
+    ReceiverSettings set{centralFreq, sampleFreq};
+    SettingTransaction setTransaction(bufferSize, TypeTransaction::loop, ircSize, true);
 
     auto count = RtlSdrDev::deviceSearch();
     ASSERT_TRUE(count == 2);
 
-    auto rec1 = ReceiverFactory::create(
-        {ReceiverFactory::ReceiverParams::ReceiverType::hw, 0, {bufferSize, TypeTransaction::loop, ircSize, true}});
+    auto rec1 = ReceiverFactory::create({ReceiverFactory::ReceiverParams::ReceiverType::hw, 0});
 
-    auto rec2 = ReceiverFactory::create(
-        {ReceiverFactory::ReceiverParams::ReceiverType::hw, 1, {bufferSize, TypeTransaction::loop, ircSize, true}});
+    auto rec2 = ReceiverFactory::create({ReceiverFactory::ReceiverParams::ReceiverType::hw, 1});
 
     std::vector<uint8_t> buf1(0);
     buf1.reserve(1024 * 1024 * 512);
@@ -173,9 +168,11 @@ TEST_F(ReceiverTestModeTest, startTestModeHwLoop_2_Dev) {
         buf2.insert(buf2.end(), uintPtr, uintPtr + size);
     });
 
-    rec1->setSettings(&recset);
+    rec1->setSettingsReceiver(&set);
+    rec1->setSettingsTransaction(&setTransaction);
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
-    rec2->setSettings(&recset);
+    rec2->setSettingsReceiver(&set);
+    rec2->setSettingsTransaction(&setTransaction);
 
     rec1->start();
     rec2->start();

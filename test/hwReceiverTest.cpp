@@ -14,23 +14,22 @@ protected:
 TEST_F(ReceiverTest, startHwLoop) {
     size_t irqSize    = 15;
     size_t bufferSize = 1024 * 256 * irqSize;
-    ReceiverFactory::ReceiverParams params{
-        ReceiverFactory::ReceiverParams::ReceiverType::hw, 0, {bufferSize, TypeTransaction::loop, irqSize}};
+    ReceiverFactory::ReceiverParams params{ReceiverFactory::ReceiverParams::ReceiverType::hw, 0};
     auto rec = ReceiverFactory::create(params);
 
     uint32_t centralFreq = 200e6;
     uint32_t sampleFreq  = 1e6;
-    int32_t gain         = 0;
-    RfSettings sett{centralFreq, sampleFreq, gain};
 
-    ReceiverSettings recset(sett);
-    rec->setSettings(&recset);
+    ReceiverSettings set{centralFreq, sampleFreq};
+    SettingTransaction setTransaction(bufferSize, TypeTransaction::loop, irqSize, false);
+
+    rec->setSettingsReceiver(&set);
+    rec->setSettingsTransaction(&setTransaction);
 
     std::ofstream out("complexdataloop.txt", std::fstream::out | std::fstream::trunc);
     if(!out.is_open()) {
         throw "File could not be opened";
     }
-
     rec->setCallBack([&out](Complex<int8_t>* ptr, uint32_t size) { out.write((char*)ptr, size); });
 
     rec->start();
@@ -42,18 +41,18 @@ TEST_F(ReceiverTest, startHwLoop) {
 
 TEST_F(ReceiverTest, startHwSingle) {
     size_t bufferSize = 512 * 256;
-    ReceiverFactory::ReceiverParams params{
-        ReceiverFactory::ReceiverParams::ReceiverType::hw, 0, {bufferSize, TypeTransaction::single, 0}};
+    ReceiverFactory::ReceiverParams params{ReceiverFactory::ReceiverParams::ReceiverType::hw, 0};
     auto rec = ReceiverFactory::create(params);
 
-    uint32_t centralFreq = 170e6;
-    uint32_t sampleFreq  = 1.2e6;
-    int32_t gain         = 0;
-    RfSettings sett{centralFreq, sampleFreq, gain};
+    uint32_t centralFreq = 200e6;
+    uint32_t sampleFreq  = 1e6;
 
-    ReceiverSettings recset(sett);
+    ReceiverSettings set{centralFreq, sampleFreq};
+    SettingTransaction setTransaction(bufferSize, TypeTransaction::single, 0, false);
 
-    rec->setSettings(&recset);
+    rec->setSettingsReceiver(&set);
+    rec->setSettingsTransaction(&setTransaction);
+
 
     std::ofstream out("complexdatasingle.txt", std::fstream::out | std::fstream::trunc);
     if(!out.is_open()) {

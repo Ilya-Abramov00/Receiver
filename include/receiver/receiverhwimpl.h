@@ -8,24 +8,22 @@
 
 class ReceiverHWImpl : public IReceiver {
 public:
-    ReceiverHWImpl(SettingTransaction settingTransaction, uint32_t numberDev = 0);
+    ReceiverHWImpl( uint32_t numberDev = 0);
     ~ReceiverHWImpl() override;
 
-    virtual bool getComplex(const BaseSettings* settings, Buffer& out) override final;
-    virtual void getSpectrum(const BaseSettings* settings, SpectBuff& out) override final;
-    virtual void setSettings(BaseSettings* sett) override final;
+    virtual void setSettingsReceiver(BaseSettingsReceiver* sett) override final;
+    virtual void setSettingsTransaction(BaseSettingTransaction* sett) override final;
+
+    void setCallBack(std::function<void(Complex<int8_t>*, uint32_t)> f) override final;
 
     void start() override final;
     void stop() override final;
-    virtual bool getComplex(Buffer& out) override final;
-    virtual void getSpectrum(SpectBuff& out) override final;
-
-    void setCallBack(std::function<void(Complex<int8_t>*, uint32_t)> f) override final;
 
 private:
     struct Pimpl;
     std::unique_ptr<Pimpl> m_d;
-    rtlsdr_read_async_cb_t callback;
+    SettingTransaction settingTransaction;
+
     std::unique_ptr<std::thread> thread;
 
     virtual bool getComplex(Complex<int8_t>* complexBuff, uint32_t sizeOfBuff) override final;

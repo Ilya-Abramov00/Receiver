@@ -9,19 +9,15 @@
 
 class FakeReceiver : public IReceiver {
 public:
-    FakeReceiver(SettingTransaction settingTransaction);
+    FakeReceiver();
     ~FakeReceiver();
 
-    virtual void setSettings(BaseSettings* settings) override final;
-    virtual bool getComplex(const BaseSettings* settings, Buffer& out) override final;
-    virtual void getSpectrum(const BaseSettings* settings, SpectBuff& out) override final;
-
-    virtual bool getComplex(Buffer& out) override final;
-    virtual void getSpectrum(SpectBuff& out) override final;
+    virtual void setSettingsReceiver(BaseSettingsReceiver* settings) override final;
+    virtual void setSettingsTransaction(BaseSettingTransaction* sett) override final { }
+    void setCallBack(std::function<void(Complex<int8_t>*, uint32_t)> f) override final;
 
     virtual void start() override final;
     virtual void stop() override final;
-    void setCallBack(std::function<void(Complex<int8_t>*, uint32_t)> f) override final;
 
 private:
     void set(const fakeParams* fakeset) const;

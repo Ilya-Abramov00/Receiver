@@ -8,27 +8,20 @@
 
 using namespace Base;
 
-struct BaseSettings {
-    uint32_t sampleCount;
-    virtual ~BaseSettings() = default;
+struct BaseSettingsReceiver {
+    virtual ~BaseSettingsReceiver() = default;
 };
 
-struct RfSettings {
-    uint32_t centralFreq; // fc
-    uint32_t sampleFreq;  // fd
+struct ReceiverSettings : public BaseSettingsReceiver {
+    int direct_sampling{0};
     int gain{0};
     int ppm_error{0};
     int agcMode{1};
-};
+    uint32_t sampleCount;
+    uint32_t centralFreq; // fc
+    uint32_t sampleFreq;  // fd
 
-struct ReceiverSettings : public BaseSettings {
-    RfSettings rfSettings;
-    int n_read;
-    int sync_mode{1};
-    int direct_sampling{0};
-    int dithering{1};
-
-    explicit ReceiverSettings(const RfSettings& rfSettings) : rfSettings(rfSettings) { }
+    ReceiverSettings(uint32_t centralFreq, uint32_t sampleFreq) : centralFreq(centralFreq), sampleFreq(sampleFreq) { }
     ~ReceiverSettings() override = default;
 };
 
@@ -37,40 +30,42 @@ struct sinParams {
     uint64_t freq;
 };
 
-struct fakeParams : public BaseSettings {
+struct fakeParams : public BaseSettingsReceiver {
     uint32_t fd;
-    // uint64_t size;
+    uint32_t sampleCount;
     float noiseLVL;
     std::vector<sinParams> sinPar;
 
     ~fakeParams() override = default;
 };
 
-const std::size_t maxBufferSize = 256 * 16384;
+struct BaseSettingTransaction {
+    virtual ~BaseSettingTransaction() { }
+};
 
 enum class TypeTransaction { single, loop };
-struct SettingTransaction {
+struct SettingTransaction : BaseSettingTransaction {
+    SettingTransaction(size_t bufferSize, TypeTransaction typeTransaction, size_t ircSize, bool testMode) :
+        bufferSize(bufferSize), typeTransaction(typeTransaction), ircSize(ircSize), testMode(testMode) { }
+    SettingTransaction() { }
+
     std::size_t bufferSize{0};
     TypeTransaction typeTransaction{0};
     std::size_t ircSize{0};
     bool testMode = false;
 };
+
 class IReceiver {
 public:
-    using Buffer    = std::vector<Complex<uint8_t> >;
-    using SpectBuff = std::vector<Complex<double> >;
-    IReceiver(SettingTransaction settingTransaction);
+    IReceiver();
     virtual ~IReceiver() = default;
 
-    virtual void setSettings(BaseSettings* sett)                   = 0; //
-    virtual bool getComplex(const BaseSettings* sett, Buffer&)     = 0;
-    virtual void getSpectrum(const BaseSettings* sett, SpectBuff&) = 0;
-
-    virtual void start()                                                        = 0;
-    virtual void stop()                                                         = 0;
-    virtual bool getComplex(Buffer&)                                            = 0;
-    virtual void getSpectrum(SpectBuff&)                                        = 0;
+    virtual void setSettingsReceiver(BaseSettingsReceiver* sett)                = 0;
+    virtual void setSettingsTransaction(BaseSettingTransaction* sett)           = 0;
     virtual void setCallBack(std::function<void(Complex<int8_t>*, uint32_t)> f) = 0;
+
+    virtual void start() = 0;
+    virtual void stop()  = 0;
 
 protected:
     virtual bool getComplex(Complex<int8_t>* complexBuff, uint32_t sizeOfBuff) = 0;
@@ -79,12 +74,11 @@ protected:
     }
 
     bool needProcessing = true;
-    SettingTransaction settingTransaction;
 
     std::function<void(Complex<int8_t>*, uint32_t)> process;
     std::vector<Complex<int8_t> > complexBuff;
 };
 
-inline IReceiver::IReceiver(SettingTransaction settingTransaction) : settingTransaction(settingTransaction) {
-    complexBuff.reserve(settingTransaction.bufferSize);
+inline IReceiver::IReceiver() {
+    // complexBuff.reserve(settingTransaction.bufferSize);
 }
