@@ -121,10 +121,10 @@ bool ReceiverHWImpl::getComplex(Complex<int8_t>* complexBuff, uint32_t sizeOfBuf
     m_d->resetBuffer();
 
     int n_read;
-    auto result = rtlsdr_read_sync(m_d->dev, reinterpret_cast<char*>(complexBuff), sizeOfBuff * 2, &n_read);
+    auto result = rtlsdr_read_sync(m_d->dev, reinterpret_cast<char*>(complexBuff), sizeOfBuff, &n_read);
 
-    if(n_read != sizeOfBuff * 2) {
-        std::cerr << "Полученно " << n_read << "данных" << std::endl;
+    if(n_read != sizeOfBuff) {
+        std::cerr << "Warning: " << "получено " << n_read << "данных" << std::endl;
     }
     if(result < 0)
         std::cerr << "WARNING: sync read failed." << std::endl;
@@ -358,7 +358,7 @@ void ReceiverHWImpl::startLoop() {
     thread = std::make_unique<std::thread>([this]() {
         m_d->resetBuffer(); // должен быть обязательно!!
         auto r = rtlsdr_read_async(m_d->dev, m_d->callback, this, settingTransaction.ircSize,
-                                   settingTransaction.bufferSize
+                                   2*settingTransaction.bufferSize
                                        / settingTransaction.ircSize); // this в данном случае является контекстом
 
         if(r < 0) {
@@ -369,7 +369,7 @@ void ReceiverHWImpl::startLoop() {
 
 void ReceiverHWImpl::startSingle() {
     while(isNeedProcessing()) {
-        getComplex(complexBuff.data(), settingTransaction.bufferSize);
+        getComplex(complexBuff.data(), 2*settingTransaction.bufferSize);
         process(complexBuff.data(), settingTransaction.bufferSize * 2);
     }
 }
