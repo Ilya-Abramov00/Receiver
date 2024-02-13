@@ -1,8 +1,8 @@
-#include "receiver/receiverhwimpl.h"
+#include "receiver/impl/receiverhwimpl.h"
 
 #include "base/complex.h"
 #include "dsp/fft.h"
-#include "receiver/receiverfactory.h"
+#include "receiver/common/receiverfactory.h"
 #include "rtl-sdr.h"
 
 #include <iostream>

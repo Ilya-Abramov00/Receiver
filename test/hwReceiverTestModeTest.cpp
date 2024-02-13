@@ -1,5 +1,5 @@
-#include "receiver/receiverfactory.h"
-#include "receiver/receiverhwimpl.h"
+#include "receiver/common/receiverfactory.h"
+#include "receiver/impl/receiverhwimpl.h"
 
 #include <gtest/gtest.h>
 #include <iostream>

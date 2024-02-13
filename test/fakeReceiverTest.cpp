@@ -1,7 +1,6 @@
 
 #include "dsp/fft.h"
-#include "receiver/receiverfactory.h"
-#include "receiver/receiversoftimpl.h"
+#include "receiver/common/receiverfactory.h"
 
 #include <fstream>
 #include <gtest/gtest.h>

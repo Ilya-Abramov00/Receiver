@@ -1,7 +1,6 @@
 #include "base/complex.h"
-#include "receiver/gen_sin.h"
+#include "receiver/fake/gen_sin.h"
 
-#include <cmath>
 #include <fstream>
 #include <gtest/gtest.h>
 #include <vector>

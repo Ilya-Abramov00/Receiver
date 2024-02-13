@@ -1,11 +1,8 @@
 #include <gtest/gtest.h>
 #include "dsp/fft.h"
-#include "receiver/gen_noise.h"
-#include "base/writer.h"
+#include "receiver/fake/gen_noise.h"
 #include <vector>
-#include <fstream>
 
-using namespace Base;
 
 TEST( TestNoise, WNFine ) {
 	Fftw fftw;

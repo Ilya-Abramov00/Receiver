@@ -1,4 +1,4 @@
-#include "receiver/receiverfactory.h"
+#include "receiver/common/receiverfactory.h"
 
 #include <gtest/gtest.h>
 #include <iostream>

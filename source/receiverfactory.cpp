@@ -1,7 +1,7 @@
-#include "receiver/receiverfactory.h"
+#include "receiver/common/receiverfactory.h"
 
-#include "receiver/receiverhwimpl.h"
-#include "receiver/receiversoftimpl.h"
+#include "receiver/impl/receiverhwimpl.h"
+#include "receiver/fake/receiversoftimpl.h"
 
 std::unique_ptr<IReceiver> ReceiverFactory::create(ReceiverParams params) {
     switch(params.receiverType) {
