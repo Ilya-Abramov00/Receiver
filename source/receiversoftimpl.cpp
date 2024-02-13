@@ -1,6 +1,6 @@
 #include "receiver/receiversoftimpl.h"
 
-FakeReceiver::FakeReceiver()  { }
+FakeReceiver::FakeReceiver() { }
 
 FakeReceiver::~FakeReceiver() {
     // delete f_p;
@@ -8,8 +8,8 @@ FakeReceiver::~FakeReceiver() {
 
 void FakeReceiver::setSettingsReceiver(BaseSettingsReceiver* settings) {
     this->f_p = dynamic_cast<fakeParams*>(settings);
+    complexBuff.resize(f_p->sampleCount);
 }
-
 
 bool FakeReceiver::getComplex(Complex<int8_t>* complexBuff, uint32_t sizeOfBuff) {
     f_p->sampleCount                   = sizeOfBuff;
@@ -22,19 +22,11 @@ bool FakeReceiver::getComplex(Complex<int8_t>* complexBuff, uint32_t sizeOfBuff)
 }
 
 void FakeReceiver::start() {
-/*    needProcessing    = true;
-    size_t counter    = settingTransaction.bufferSize;
-    uint32_t readSize = settingTransaction.bufferSize / 2;
+    needProcessing = true;
     while(isNeedProcessing()) {
-        getComplex(complexBuff.data(), readSize);
-
-        counter -= readSize;
-
-        if(counter == 0) {
-            process(complexBuff.data(), settingTransaction.bufferSize);
-            counter = settingTransaction.bufferSize;
-        }
-    }*/
+        getComplex(complexBuff.data(), f_p->sampleCount);
+        process(complexBuff.data(), f_p->sampleCount);
+    }
 }
 
 void FakeReceiver::setCallBack(std::function<void(Complex<int8_t>*, uint32_t)> f) {
