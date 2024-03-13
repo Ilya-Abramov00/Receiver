@@ -12,8 +12,8 @@ protected:
 };
 
 TEST_F(ReceiverTest, startHwLoop) {
-    size_t irqSize    = 15;
-    size_t bufferSize = 1024 * 256 * irqSize;
+    size_t irqSize    = 1;
+    size_t bufferSize = 1024 * 256;
     ReceiverFactory::ReceiverParams params{ReceiverFactory::ReceiverParams::ReceiverType::hw, 0};
     auto rec = ReceiverFactory::create(params);
 
